@@ -6,8 +6,8 @@
 
   <!-- Search Form -->
   <div class="lg:col-span-1">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-6 transition-colors">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-5 flex items-center gap-2">
+    <div class="bg-white dark:bg-[#17162a] rounded-2xl shadow-sm border border-gray-200 dark:border-[#252340] p-6 sticky top-6 transition-colors">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-[#e2e1f0] mb-5 flex items-center gap-2">
         <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
@@ -17,31 +17,31 @@
 
       <form id="searchForm" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="city">Cidade *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="city">Cidade *</label>
           <div class="relative">
             <input id="city" name="city" type="text" required placeholder="Ex: Florianópolis" autocomplete="off"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
             <ul id="citySuggestions"
-              class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
+              class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
             </ul>
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="neighborhood">Bairro <span class="text-gray-400 font-normal text-xs">(opcional)</span></label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="neighborhood">Bairro <span class="text-gray-400 dark:text-[#5c5b78] font-normal text-xs">(opcional)</span></label>
           <div class="relative">
             <input id="neighborhood" name="neighborhood" type="text" placeholder="Ex: Centro — ou deixe vazio para toda a cidade" autocomplete="off"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
             <ul id="neighborhoodSuggestions"
-              class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
+              class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
             </ul>
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="business_type">Tipo de Negócio *</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="business_type">Tipo de Negócio *</label>
           <select id="business_type" name="business_type" required
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
             <option value="">Selecione...</option>
             <option value="restaurant">Restaurante</option>
             <option value="barber_shop">Barbearia</option>
@@ -57,9 +57,9 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="quantity">Quantidade</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="quantity">Quantidade</label>
           <select id="quantity" name="quantity"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
             <option value="5">5 resultados</option>
             <option value="10">10 resultados</option>
             <option value="20" selected>20 resultados</option>
@@ -72,12 +72,12 @@
         <div class="pt-1">
           <label class="flex items-center justify-between cursor-pointer group">
             <div>
-              <span class="text-sm font-medium text-gray-700">Somente sem site</span>
-              <p class="text-xs text-gray-500 mt-0.5">Filtra apenas leads sem website cadastrado</p>
+              <span class="text-sm font-medium text-gray-700 dark:text-[#9897b3]">Somente sem site</span>
+              <p class="text-xs text-gray-500 dark:text-[#5c5b78] mt-0.5">Filtra apenas leads sem website cadastrado</p>
             </div>
             <div class="relative ml-3 flex-shrink-0">
               <input type="checkbox" id="only_without_website" name="only_without_website" class="sr-only peer" />
-              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-600
+              <div class="w-11 h-6 bg-gray-200 dark:bg-[#252340] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-600
                           rounded-full peer peer-checked:bg-brand-600 transition-colors
                           after:content-[''] after:absolute after:top-[2px] after:left-[2px]
                           after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
@@ -99,9 +99,9 @@
       </form>
 
       <!-- Export button -->
-      <div class="mt-4 pt-4 border-t border-gray-100">
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-[#1d1c2e]">
         <a id="exportBtn" href="/export" target="_blank"
-          class="w-full flex items-center justify-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50
+          class="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-[#252340] text-gray-700 dark:text-[#9897b3] hover:bg-gray-50 dark:hover:bg-[#1d1c2e]
                  font-medium py-2.5 px-4 rounded-lg transition-colors text-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -109,7 +109,7 @@
           </svg>
           Exportar XLSX
         </a>
-        <p class="text-xs text-gray-400 text-center mt-1">Exporta todos os leads do banco</p>
+        <p class="text-xs text-gray-400 dark:text-[#5c5b78] text-center mt-1">Exporta todos os leads do banco</p>
       </div>
     </div>
   </div>
@@ -118,14 +118,14 @@
   <div class="lg:col-span-2 space-y-4">
 
     <!-- Summary bar -->
-    <div id="summaryBar" class="hidden fade-in bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3
+    <div id="summaryBar" class="hidden fade-in bg-white dark:bg-[#17162a] rounded-xl border border-gray-200 dark:border-[#252340] shadow-sm px-5 py-3
                                 flex flex-wrap items-center gap-4 text-sm">
-      <span class="font-semibold text-gray-700" id="summaryText"></span>
+      <span class="font-semibold text-gray-700 dark:text-[#c4c3da]" id="summaryText"></span>
     </div>
 
     <!-- Empty state -->
-    <div id="emptyState" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
-      <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div id="emptyState" class="bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm p-12 text-center">
+      <div class="w-16 h-16 bg-indigo-50 dark:bg-[#251f45] rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
             d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -133,31 +133,31 @@
             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
       </div>
-      <h3 class="text-gray-700 font-semibold text-base mb-1">Nenhuma busca realizada</h3>
-      <p class="text-gray-400 text-sm">Preencha os filtros ao lado e clique em <strong>Buscar Negócios</strong>.</p>
+      <h3 class="text-gray-700 dark:text-[#c4c3da] font-semibold text-base mb-1">Nenhuma busca realizada</h3>
+      <p class="text-gray-400 dark:text-[#5c5b78] text-sm">Preencha os filtros ao lado e clique em <strong class="dark:text-[#9897b3]">Buscar Negócios</strong>.</p>
     </div>
 
     <!-- No results state -->
-    <div id="noResultsState" class="hidden fade-in bg-white rounded-2xl border border-amber-200 shadow-sm p-10 text-center">
-      <div class="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-3">
+    <div id="noResultsState" class="hidden fade-in bg-white dark:bg-[#17162a] rounded-2xl border border-amber-200 dark:border-[#352a1a] shadow-sm p-10 text-center">
+      <div class="w-14 h-14 bg-amber-50 dark:bg-[#2a1f0e] rounded-full flex items-center justify-center mx-auto mb-3">
         <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
-      <h3 class="text-gray-700 font-semibold mb-1">Nenhum resultado novo encontrado</h3>
-      <p class="text-gray-500 text-sm">Todos os negócios já foram vistos anteriormente ou não há resultados para os filtros selecionados.</p>
+      <h3 class="text-gray-700 dark:text-[#c4c3da] font-semibold mb-1">Nenhum resultado novo encontrado</h3>
+      <p class="text-gray-500 dark:text-[#5c5b78] text-sm">Todos os negócios já foram vistos anteriormente ou não há resultados para os filtros selecionados.</p>
     </div>
 
     <!-- Results table -->
-    <div id="resultsCard" class="hidden fade-in bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 class="font-semibold text-gray-800 text-base" id="resultsTitle">Resultados</h3>
-        <span class="text-xs text-gray-400" id="resultsCount"></span>
+    <div id="resultsCard" class="hidden fade-in bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-[#1d1c2e] flex items-center justify-between">
+        <h3 class="font-semibold text-gray-800 dark:text-[#c4c3da] text-base" id="resultsTitle">Resultados</h3>
+        <span class="text-xs text-gray-400 dark:text-[#5c5b78]" id="resultsCount"></span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+          <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
             <tr>
               <th class="px-4 py-3 text-left font-medium">Nome</th>
               <th class="px-4 py-3 text-left font-medium">Endereço</th>
@@ -166,7 +166,7 @@
               <th class="px-4 py-3 text-center font-medium">Maps</th>
             </tr>
           </thead>
-          <tbody id="resultsBody" class="divide-y divide-gray-100 text-gray-700">
+          <tbody id="resultsBody" class="divide-y divide-gray-100 dark:divide-[#1d1c2e] text-gray-700 dark:text-[#c4c3da]">
           </tbody>
         </table>
       </div>

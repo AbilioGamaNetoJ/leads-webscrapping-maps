@@ -1,47 +1,47 @@
-# Prospector de Negócios Locais
+# 🚀 Prospector de Negócios Locais
 
-Ferramenta interna da **Codex Create** para prospecção de negócios locais via Google Places API. Permite filtrar empresas por cidade, bairro e tipo de negócio, identificar leads sem site cadastrado e exportar os resultados em planilha `.xlsx` para o time comercial.
-
----
-
-## Funcionalidades
-
-- Busca por cidade + bairro com conversão automática de endereço em coordenadas (Geocoding API)
-- Filtro por tipo de negócio (restaurante, barbearia, salão de beleza, farmácia, etc.)
-- Toggle **"Somente sem site"** para focar nos leads com maior potencial de conversão
-- Deduplicação automática — negócios já vistos nunca são salvos duas vezes
-- Resumo pós-busca: novos encontrados · sem site · já vistos antes
-- Exportação XLSX com todas as colunas necessárias para abordagem comercial
-- Histórico paginado com filtro por nome e por presença de site
+Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locais via Google Places API. Permite filtrar empresas por cidade 📍, bairro 🏘️ e tipo de negócio 🏪, identificar leads sem site cadastrado 🔍 e exportar os resultados em planilha `.xlsx` 📊 para o time comercial.
 
 ---
 
-## Stack
+## ✨ Funcionalidades
+
+- 🔎 Busca por cidade + bairro com conversão automática de endereço em coordenadas (Geocoding API)
+- 🏷️ Filtro por tipo de negócio (restaurante, barbearia, salão de beleza, farmácia, etc.)
+- 🎯 Toggle **"Somente sem site"** para focar nos leads com maior potencial de conversão
+- 🚫 Deduplicação automática — negócios já vistos nunca são salvos duas vezes
+- 📋 Resumo pós-busca: novos encontrados · sem site · já vistos antes
+- 📥 Exportação XLSX com todas as colunas necessárias para abordagem comercial
+- 📜 Histórico paginado com filtro por nome e por presença de site
+
+---
+
+## 🛠️ Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Python 3.12 + FastAPI |
-| Templates | Jinja2 |
-| Estilização | Tailwind CSS (CDN) |
-| Banco de dados | Neon (PostgreSQL serverless) |
-| ORM | SQLAlchemy (síncrono) |
-| HTTP client | httpx |
-| Exportação | openpyxl |
-| API externa | Google Places API (New) + Geocoding API |
+| ⚙️ Backend | Python 3.12 + FastAPI |
+| 🎨 Templates | Jinja2 |
+| 💅 Estilização | Tailwind CSS (CDN) |
+| 🗄️ Banco de dados | Neon (PostgreSQL serverless) |
+| 📦 ORM | SQLAlchemy (síncrono) |
+| 🌐 HTTP client | httpx |
+| 📑 Exportação | openpyxl |
+| 🔗 API externa | Google Places API (New) + Geocoding API |
 
 ---
 
-## Pré-requisitos
+## ✅ Pré-requisitos
 
-- Python 3.12+
-- Conta no [Neon](https://neon.tech) (free tier disponível)
-- Projeto no Google Cloud com **Places API (New)** e **Geocoding API** habilitadas
+- 🐍 Python 3.12+
+- ☁️ Conta no [Neon](https://neon.tech) (free tier disponível)
+- ☁️ Projeto no Google Cloud com **Places API (New)** e **Geocoding API** habilitadas
 
 ---
 
-## Configuração
+## ⚙️ Configuração
 
-### 1. Variáveis de ambiente
+### 1️⃣ Variáveis de ambiente
 
 Copie o arquivo de exemplo e preencha as chaves:
 
@@ -56,7 +56,7 @@ GOOGLE_MAPS_API_KEY=sua_chave_aqui
 DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
 ```
 
-### 2. Criar o ambiente virtual
+### 2️⃣ Criar o ambiente virtual
 
 Debian/Ubuntu modernos bloqueiam instalação de pacotes Python fora de um virtualenv. Crie e ative antes de instalar qualquer dependência:
 
@@ -69,7 +69,7 @@ source .venv/bin/activate
 
 O prompt do terminal vai mostrar `(.venv)` quando o ambiente estiver ativo. Para sair: `deactivate`.
 
-### 3. Instalar dependências
+### 3️⃣ Instalar dependências
 
 Com o venv ativo:
 
@@ -77,7 +77,7 @@ Com o venv ativo:
 pip install -r requirements.txt
 ```
 
-### 4. Iniciar o servidor
+### 4️⃣ Iniciar o servidor
 
 ```bash
 uvicorn main:app --reload
@@ -85,17 +85,17 @@ uvicorn main:app --reload
 
 A aplicação ficará disponível em `http://localhost:8000`.
 
-> A tabela `businesses` é criada automaticamente no banco na primeira execução.
+> 💡 A tabela `businesses` é criada automaticamente no banco na primeira execução.
 
-> **Atenção:** sempre ative o venv (`source .venv/bin/activate`) antes de rodar o servidor em uma nova sessão do terminal.
+> ⚠️ **Atenção:** sempre ative o venv (`source .venv/bin/activate`) antes de rodar o servidor em uma nova sessão do terminal.
 
 ---
 
-## Deploy na Vercel
+## 🚢 Deploy na Vercel
 
 O projeto já inclui o `vercel.json` configurado. O banco Neon é serverless e compatível nativamente com a Vercel.
 
-### 1. Subir para o GitHub
+### 1️⃣ Subir para o GitHub
 
 Crie um repositório e suba o conteúdo desta pasta (não a pasta pai):
 
@@ -107,18 +107,18 @@ git remote add origin https://github.com/seu-usuario/seu-repo.git
 git push -u origin main
 ```
 
-> O `.env` está no `.gitignore` e **não será enviado**. As variáveis serão configuradas direto na Vercel.
+> 🔒 O `.env` está no `.gitignore` e **não será enviado**. As variáveis serão configuradas direto na Vercel.
 
-### 2. Conectar na Vercel
+### 2️⃣ Conectar na Vercel
 
 1. Acesse [vercel.com](https://vercel.com) → **Add New Project**
 2. Importe o repositório do GitHub
 3. Em **Framework Preset**, selecione **Other**
 4. Clique em **Deploy** (o `vercel.json` já configura tudo automaticamente)
 
-> Se o repositório contiver a pasta `prospector/` como subdiretório (e não na raiz), configure o campo **Root Directory** para `prospector` nas opções do projeto antes de fazer o deploy.
+> 📁 Se o repositório contiver a pasta `prospector/` como subdiretório (e não na raiz), configure o campo **Root Directory** para `prospector` nas opções do projeto antes de fazer o deploy.
 
-### 3. Configurar variáveis de ambiente
+### 3️⃣ Configurar variáveis de ambiente
 
 No painel do projeto na Vercel: **Settings → Environment Variables**
 
@@ -129,79 +129,79 @@ No painel do projeto na Vercel: **Settings → Environment Variables**
 
 Após adicionar as variáveis, clique em **Redeploy** para aplicar.
 
-### Observações sobre a Vercel
+### 📌 Observações sobre a Vercel
 
-- O plano **Hobby** (gratuito) tem timeout de **10 segundos** por requisição. As chamadas ao Place Details são feitas em paralelo (`asyncio.gather`), então buscas de até 100 resultados tipicamente completam em 2–5 segundos. O gargalo real é a paginação do Nearby Search (sequencial por limitação da API), que adiciona ~200ms por página de 20 resultados.
-- A tabela `businesses` é criada automaticamente no primeiro acesso (via `create_all` no startup).
-- Arquivos estáticos (`app.js`) são servidos pelo próprio FastAPI — sem necessidade de configuração extra.
+- ⏱️ O plano **Hobby** (gratuito) tem timeout de **10 segundos** por requisição. As chamadas ao Place Details são feitas em paralelo (`asyncio.gather`), então buscas de até 100 resultados tipicamente completam em 2–5 segundos. O gargalo real é a paginação do Nearby Search (sequencial por limitação da API), que adiciona ~200ms por página de 20 resultados.
+- 🗄️ A tabela `businesses` é criada automaticamente no primeiro acesso (via `create_all` no startup).
+- 📂 Arquivos estáticos (`app.js`) são servidos pelo próprio FastAPI — sem necessidade de configuração extra.
 
 ---
 
-## Estrutura de Pastas
+## 📁 Estrutura de Pastas
 
 ```
 prospector/
-├── main.py                   # Instância do FastAPI e routers
-├── .env                      # Variáveis de ambiente (não commitado)
-├── .env.example              # Template do .env
-├── requirements.txt
+├── main.py                   # 🚀 Instância do FastAPI e routers
+├── .env                      # 🔒 Variáveis de ambiente (não commitado)
+├── .env.example              # 📄 Template do .env
+├── requirements.txt          # 📦 Dependências
 ├── database/
-│   ├── connection.py         # Engine e SessionLocal
-│   └── models.py             # Modelo ORM da tabela businesses
+│   ├── connection.py         # 🔌 Engine e SessionLocal
+│   └── models.py             # 📊 Modelo ORM da tabela businesses
 ├── routers/
-│   ├── search.py             # POST /search
-│   ├── export.py             # GET /export
-│   └── history.py            # GET /historico
+│   ├── search.py             # 🔎 POST /search
+│   ├── export.py             # 📥 GET /export
+│   └── history.py            # 📜 GET /historico
 ├── services/
-│   ├── places.py             # Nearby Search + Place Details
-│   ├── geocoding.py          # Cidade/bairro → lat/lng
-│   ├── deduplication.py      # Verificação de place_id no banco
-│   └── xlsx_generator.py     # Geração do XLSX em memória
+│   ├── places.py             # 🗺️ Nearby Search + Place Details
+│   ├── geocoding.py          # 📍 Cidade/bairro → lat/lng
+│   ├── deduplication.py      # 🚫 Verificação de place_id no banco
+│   └── xlsx_generator.py     # 📑 Geração do XLSX em memória
 ├── templates/
-│   ├── base.html             # Layout base com Tailwind
-│   ├── index.html            # Página de busca
-│   └── historico.html        # Página de histórico
+│   ├── base.html             # 🏗️ Layout base com Tailwind
+│   ├── index.html            # 🔍 Página de busca
+│   └── historico.html        # 📋 Página de histórico
 └── static/
-    └── app.js                # AJAX e renderização de resultados
+    └── app.js                # ⚡ AJAX e renderização de resultados
 ```
 
 ---
 
-## Endpoints
+## 🌐 Endpoints
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/` | Página principal com formulário de busca |
-| `POST` | `/search` | Executa busca e salva novos leads |
-| `GET` | `/export` | Download do XLSX com todos os leads |
-| `GET` | `/export?only_without_website=true` | Download apenas dos leads sem site |
-| `GET` | `/historico` | Histórico paginado de leads salvos |
+| `GET` | `/` | 🏠 Página principal com formulário de busca |
+| `POST` | `/search` | 🔎 Executa busca e salva novos leads |
+| `GET` | `/export` | 📥 Download do XLSX com todos os leads |
+| `GET` | `/export?only_without_website=true` | 📥 Download apenas dos leads sem site |
+| `GET` | `/historico` | 📜 Histórico paginado de leads salvos |
 
 ---
 
-## Tipos de Negócio Suportados
+## 🏪 Tipos de Negócio Suportados
 
 | Label | Valor (Places API) |
 |---|---|
-| Restaurante | `restaurant` |
-| Barbearia | `barber_shop` |
-| Loja de Roupas | `clothing_store` |
-| Salão de Beleza | `beauty_salon` |
-| Farmácia | `pharmacy` |
-| Padaria | `bakery` |
-| Academia | `gym` |
-| Supermercado | `supermarket` |
-| Petshop | `pet_store` |
-| Clínica / Consultório | `doctor` |
+| 🍽️ Restaurante | `restaurant` |
+| 💈 Barbearia | `barber_shop` |
+| 👕 Loja de Roupas | `clothing_store` |
+| 💅 Salão de Beleza | `beauty_salon` |
+| 💊 Farmácia | `pharmacy` |
+| 🥖 Padaria | `bakery` |
+| 💪 Academia | `gym` |
+| 🛒 Supermercado | `supermarket` |
+| 🐾 Petshop | `pet_store` |
+| 🏥 Clínica / Consultório | `doctor` |
 
 ---
 
-## Observações
+## 📌 Observações
 
-- A Places API (New) exige billing ativo no Google Cloud, mas há crédito gratuito de $200/mês.
-- O arquivo XLSX é gerado em memória (`BytesIO`) — nenhum arquivo temporário é salvo em disco.
-- O `.env` está no `.gitignore` e nunca deve ser commitado.
+- 💰 A Places API (New) exige billing ativo no Google Cloud, mas há crédito gratuito de $200/mês.
+- 📄 O arquivo XLSX é gerado em memória (`BytesIO`) — nenhum arquivo temporário é salvo em disco.
+- 🔒 O `.env` está no `.gitignore` e nunca deve ser commitado.
 
 ---
 
-*Uso interno — Codex Create*
+*🔐 Uso interno — Codex Create*

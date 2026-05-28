@@ -33,7 +33,7 @@
       suggestions.forEach((s) => {
         const li = document.createElement('li');
         li.className =
-          'px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 transition-colors';
+          'px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 dark:text-[#9897b3] dark:hover:bg-[#252340] dark:hover:text-[#e2e1f0] transition-colors';
         li.textContent = s.label;
         li.dataset.value = s.value;
         li.dataset.placeId = s.place_id || '';
@@ -49,9 +49,12 @@
 
     function highlightItem(index) {
       const items = getItems();
+      const isDark = document.documentElement.classList.contains('dark');
       items.forEach((el, i) => {
-        el.classList.toggle('bg-indigo-50', i === index);
-        el.classList.toggle('text-indigo-700', i === index);
+        const active = i === index;
+        el.classList.toggle('bg-indigo-50', active && !isDark);
+        el.classList.toggle('text-indigo-700', active && !isDark);
+        el.classList.toggle('highlighted', active);
       });
     }
 
@@ -142,15 +145,15 @@
 
   function buildWebsiteBadge(hasWebsite) {
     if (hasWebsite) {
-      return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Sim</span>';
+      return '<span class="badge-has-site inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Sim</span>';
     }
-    return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Não</span>';
+    return '<span class="badge-no-site inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Não</span>';
   }
 
   function buildMapsLink(url) {
-    if (!url) return '<span class="text-gray-300 text-xs">—</span>';
+    if (!url) return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
-      class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium text-xs transition-colors">
+      class="maps-link inline-flex items-center gap-1 text-brand-600 hover:text-brand-500 font-medium text-xs transition-colors">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -187,11 +190,11 @@
 
     resultsBody.innerHTML = results.map(biz => `
       <tr class="hover:bg-gray-50 transition-colors">
-        <td class="px-4 py-3 font-medium text-gray-800">${escapeHtml(biz.name)}</td>
-        <td class="px-4 py-3 text-gray-500 max-w-xs">
+        <td class="cell-name px-4 py-3 font-medium text-gray-800">${escapeHtml(biz.name)}</td>
+        <td class="cell-addr px-4 py-3 text-gray-500 max-w-xs">
           <span class="block truncate" title="${escapeHtml(biz.address)}">${escapeHtml(biz.address)}</span>
         </td>
-        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}</td>
+        <td class="cell-phone px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}</td>
         <td class="px-4 py-3 text-center">${buildWebsiteBadge(biz.has_website)}</td>
         <td class="px-4 py-3 text-center">${buildMapsLink(biz.maps_url)}</td>
       </tr>

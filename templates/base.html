@@ -35,10 +35,50 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     .theme-toggle { transition: transform 0.3s ease; }
     .theme-toggle:hover { transform: rotate(30deg); }
+
+    /* Dark mode for JS-generated autocomplete items */
+    .dark #citySuggestions,
+    .dark #neighborhoodSuggestions {
+      background-color: #17162a;
+      border-color: #252340;
+    }
+    .dark #citySuggestions li,
+    .dark #neighborhoodSuggestions li {
+      color: #9897b3;
+    }
+    .dark #citySuggestions li:hover,
+    .dark #neighborhoodSuggestions li:hover,
+    .dark #citySuggestions li.highlighted,
+    .dark #neighborhoodSuggestions li.highlighted {
+      background-color: #252340 !important;
+      color: #e2e1f0 !important;
+    }
+
+    /* Dark mode for JS-generated result rows */
+    .dark #resultsBody tr:hover {
+      background-color: #1d1c2e;
+    }
+    .dark #resultsBody .cell-name   { color: #f0eff8; }
+    .dark #resultsBody .cell-addr   { color: #a09fc0; }
+    .dark #resultsBody .cell-phone  { color: #c4c3da; }
+    .dark #resultsBody .badge-no-site {
+      background-color: #0d2e1e;
+      color: #4ade80;
+    }
+    .dark #resultsBody .badge-has-site {
+      background-color: #252340;
+      color: #9897b3;
+    }
+    .dark #resultsBody .maps-link {
+      color: #a78bfa;
+    }
+
+    /* Smooth color-scheme for native controls */
+    .dark { color-scheme: dark; }
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col transition-colors">
+<body class="bg-gray-50 dark:bg-[#0d0d1a] min-h-screen flex flex-col transition-colors">
 
   <script>
     (function() {
@@ -97,7 +137,7 @@
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white dark:bg-brand-950 border-t border-gray-200 dark:border-brand-900 mt-auto transition-colors">
+  <footer class="bg-white dark:bg-[#111021] border-t border-gray-200 dark:border-[#1d1c2e] mt-auto transition-colors">
     <div class="max-w-7xl mx-auto px-4 py-3 text-center text-xs text-gray-400 dark:text-gray-500">
       Codex Create — Uso interno &middot; Prospector v1.1
     </div>
