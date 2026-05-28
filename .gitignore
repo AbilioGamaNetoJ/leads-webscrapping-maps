@@ -1,0 +1,18 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# MCP
+.mcp.json
+mcp.json
+.claude/
+claude_desktop_config.json
