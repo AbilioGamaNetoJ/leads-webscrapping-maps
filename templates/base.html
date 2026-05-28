@@ -82,8 +82,7 @@
 
   <script>
     (function() {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      if (localStorage.getItem('theme') === 'dark') {
         document.documentElement.classList.add('dark');
       }
     })();
@@ -91,32 +90,32 @@
 
   <!-- Header -->
   <header class="bg-brand-900 dark:bg-brand-950 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
         <img src="/static/logotipo-fundo-light.png" alt="Codex Create"
-             class="h-16 w-auto rounded-lg object-contain dark:hidden" />
+             class="h-9 sm:h-14 w-auto rounded-lg object-contain flex-shrink-0 dark:hidden" />
         <img src="/static/logotipo-fundo-dark.png" alt="Codex Create"
-             class="h-16 w-auto rounded-lg object-contain hidden dark:block" />
-        <div>
-          <span class="text-white font-bold text-lg leading-tight block">Prospector</span>
-          <span class="text-brand-300 text-xs font-medium">Codex Create</span>
+             class="h-9 sm:h-14 w-auto rounded-lg object-contain flex-shrink-0 hidden dark:block" />
+        <div class="min-w-0">
+          <span class="text-white font-bold text-sm sm:text-lg leading-tight block truncate">Prospector</span>
+          <span class="text-brand-300 text-xs font-medium hidden sm:block">Codex Create</span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <nav class="flex gap-1">
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <nav class="flex gap-0.5 sm:gap-1">
           <a href="/"
-             class="px-4 py-2 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors
+             class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap
                     {% if request.url.path == '/' %}bg-brand-800 text-white{% endif %}">
             Buscar
           </a>
           <a href="/historico"
-             class="px-4 py-2 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors
+             class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap
                     {% if request.url.path == '/historico' %}bg-brand-800 text-white{% endif %}">
             Histórico
           </a>
         </nav>
         <button id="themeToggle" type="button"
-          class="ml-2 p-2 rounded-lg text-brand-200 hover:text-white hover:bg-brand-800 transition-colors theme-toggle"
+          class="p-1.5 sm:p-2 rounded-lg text-brand-200 hover:text-white hover:bg-brand-800 transition-colors theme-toggle"
           aria-label="Alternar modo escuro">
           <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
