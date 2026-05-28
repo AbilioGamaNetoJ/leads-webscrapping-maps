@@ -1,5 +1,6 @@
 import asyncio
 import httpx
+import math
 import os
 from sqlalchemy.orm import Session
 from database.models import Business
@@ -12,10 +13,22 @@ load_dotenv()
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 PLACES_API_BASE = "https://places.googleapis.com/v1"
 
-# A API do Google nem sempre classifica com o tipo esperado; mapeamos para cobrir sinônimos reais.
+# Rótulos em PT-BR usados como textQuery no searchText para melhorar a relevância dos resultados.
+TYPE_LABEL_PT: dict[str, str] = {
+    "restaurant": "restaurante",
+    "barber_shop": "barbearia",
+    "clothing_store": "loja de roupas",
+    "beauty_salon": "salão de beleza",
+    "pharmacy": "farmácia",
+    "bakery": "padaria",
+    "gym": "academia",
+    "supermarket": "supermercado",
+    "pet_store": "pet shop",
+    "doctor": "clínica médica",
+}
+
+# Referência de subtipos por categoria (não usado na API — documentação).
 # Tipos válidos: https://developers.google.com/maps/documentation/places/web-service/place-types
-# Apenas tipos da Table A da Places API (New) confirmados para searchNearby.
-# meal_delivery / meal_takeaway são tipos de serviço, não de local físico — causam INVALID_ARGUMENT.
 INCLUDED_TYPES_MAP: dict[str, list[str]] = {
     "restaurant": [
         "restaurant",
@@ -76,6 +89,15 @@ INCLUDED_TYPES_MAP: dict[str, list[str]] = {
 }
 
 
+def _circle_to_rectangle(lat: float, lng: float, radius_m: float) -> dict:
+    delta_lat = radius_m / 111111
+    delta_lng = radius_m / (111111 * math.cos(math.radians(lat)))
+    return {
+        "low":  {"latitude": lat - delta_lat, "longitude": lng - delta_lng},
+        "high": {"latitude": lat + delta_lat, "longitude": lng + delta_lng},
+    }
+
+
 async def _fetch_details(client: httpx.AsyncClient, place_id: str) -> dict:
     response = await client.get(
         f"{PLACES_API_BASE}/places/{place_id}",
@@ -98,37 +120,46 @@ async def search_businesses(
 ) -> dict:
     coords = await get_coordinates(city, neighborhood, neighborhood_place_id)
     radius = 2000.0 if (neighborhood.strip() or neighborhood_place_id) else 15000.0
+    text_query = TYPE_LABEL_PT.get(business_type, business_type)
+    rectangle = _circle_to_rectangle(coords["lat"], coords["lng"], radius)
 
-    api_types = INCLUDED_TYPES_MAP.get(business_type, [business_type])
-    # searchNearby não suporta paginação — máximo 20 por chamada
-    batch_size = min(20, quantity)
+    collected_places = []
+    next_page_token = None
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        nearby_response = await client.post(
-            f"{PLACES_API_BASE}/places:searchNearby",
-            headers={
-                "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
-                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
-            },
-            json={
-                "includedPrimaryTypes": api_types,
+        while len(collected_places) < quantity:
+            batch_size = min(20, quantity - len(collected_places))
+            body = {
+                "textQuery": text_query,
+                "includedType": business_type,
+                "strictTypeFiltering": True,
                 "maxResultCount": batch_size,
-                "locationRestriction": {
-                    "circle": {
-                        "center": {"latitude": coords["lat"], "longitude": coords["lng"]},
-                        "radius": radius,
-                    }
+                "locationRestriction": {"rectangle": rectangle},
+            }
+            if next_page_token:
+                body["pageToken"] = next_page_token
+
+            response = await client.post(
+                f"{PLACES_API_BASE}/places:searchText",
+                headers={
+                    "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+                    "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,nextPageToken",
                 },
-            },
-        )
-        nearby_data = nearby_response.json()
-        if "error" in nearby_data:
-            err = nearby_data["error"]
-            raise ValueError(
-                f"Erro na Places API ({err.get('status', nearby_response.status_code)}): "
-                f"{err.get('message', 'sem detalhe')}"
+                json=body,
             )
-        collected_places = nearby_data.get("places", [])
+            data = response.json()
+            if "error" in data:
+                err = data["error"]
+                raise ValueError(
+                    f"Erro na Places API ({err.get('status', response.status_code)}): "
+                    f"{err.get('message', 'sem detalhe')}"
+                )
+            page_places = data.get("places", [])
+            collected_places.extend(page_places)
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token or not page_places:
+                break
+
         total_checked = len(collected_places)
 
         # 2. Filtra duplicatas antes de fazer chamadas de detalhes
