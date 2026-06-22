@@ -46,7 +46,7 @@ def history(
         query = query.filter(Business.has_website == False)
 
     if business_type:
-        query = query.filter(Business.business_type == business_type)
+        query = query.filter(getattr(Business, "business_type") == business_type)
 
     total = query.count()
     businesses = (

@@ -1,7 +1,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from io import BytesIO
-from services.places import TYPE_LABEL_PT
+from services.places import CATEGORY_CONFIG  # type: ignore
 
 
 def generate_xlsx(businesses: list) -> BytesIO:
@@ -21,12 +21,16 @@ def generate_xlsx(businesses: list) -> BytesIO:
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
     for row, biz in enumerate(businesses, 2):
-        biz_type = TYPE_LABEL_PT.get(biz.business_type, biz.business_type).title() if biz.business_type else "Não informado"
+        biz_t = biz.business_type or ""
+        cat_conf = CATEGORY_CONFIG.get(biz_t, {})
+        # If the category config has queries, use the first query as the display name, else use the raw type
+        queries = cat_conf.get("queries", [biz_t])
+        display_type = str(queries[0]).title() if queries else "Não informado"
         
         ws.cell(row=row, column=1, value=biz.name)
         ws.cell(row=row, column=2, value=biz.address or "Não informado")
         ws.cell(row=row, column=3, value=biz.phone or "Não informado")
-        ws.cell(row=row, column=4, value=biz_type)
+        ws.cell(row=row, column=4, value=display_type)
         ws.cell(row=row, column=5, value="Sim" if biz.has_website else "Não")
         ws.cell(row=row, column=6, value=biz.maps_url or "")
 

@@ -142,7 +142,38 @@
     </div>
   </footer>
 
+  <!-- Copy toast notification -->
+  <div id="copyToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50 hidden transition-opacity duration-300">
+    Copiado!
+  </div>
+
   <script>
+    function copyPhone(phone) {
+      if (!phone || phone === 'Não informado') return;
+      const digits = phone.replace(/\D/g, '');
+      let formatted = phone;
+      if (digits.length >= 12 && digits.startsWith('55')) {
+        const area = digits.slice(2, 4);
+        const number = digits.slice(4);
+        if (number.length === 9) {
+          formatted = '+55 ' + area + ' ' + number.slice(0, 5) + '-' + number.slice(5);
+        } else if (number.length === 8) {
+          formatted = '+55 ' + area + ' ' + number.slice(0, 4) + '-' + number.slice(4);
+        } else {
+          formatted = '+55 ' + area + ' ' + number;
+        }
+      }
+      navigator.clipboard.writeText(formatted).then(function () {
+        var toast = document.getElementById('copyToast');
+        toast.classList.remove('hidden');
+        toast.style.opacity = '1';
+        setTimeout(function () {
+          toast.style.opacity = '0';
+          setTimeout(function () { toast.classList.add('hidden'); }, 300);
+        }, 1500);
+      })['catch'](function () {});
+    }
+
     (function() {
       const toggle = document.getElementById('themeToggle');
       const sun = document.getElementById('sunIcon');

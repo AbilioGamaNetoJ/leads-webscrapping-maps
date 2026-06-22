@@ -13,67 +13,99 @@ load_dotenv()
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 PLACES_API_BASE = "https://places.googleapis.com/v1"
 
-# Rótulos em PT-BR usados como textQuery no searchText para melhorar a relevância dos resultados.
-TYPE_LABEL_PT: dict[str, str] = {
-    "restaurant": "restaurante",
-    "barber_shop": "barbearia",
-    "clothing_store": "loja de roupas",
-    "beauty_salon": "salão de beleza",
-    "pharmacy": "farmácia",
-    "gym": "academia",
-    "pet_store": "pet shop",
-    "doctor": "clínica médica",
+CATEGORY_CONFIG: dict[str, dict] = {
+    "restaurant": {
+        "queries": ["restaurante", "hamburgueria", "pastelaria", "pizzaria", "lanchonete", "churrascaria"],
+        "included_type": "restaurant",
+    },
+    "barber_shop": {
+        "queries": ["barbearia"],
+        "included_type": "barber_shop",
+    },
+    "beauty_salon": {
+        "queries": ["salão de beleza", "cabeleireiro", "clínica de estética", "spa"],
+        "included_type": "beauty_salon",
+    },
+    "pharmacy": {
+        "queries": ["farmácia", "drogaria"],
+        "included_type": "pharmacy",
+    },
+    "gym": {
+        "queries": ["academia", "crossfit", "estúdio de pilates"],
+        "included_type": "gym",
+    },
+    "pet_store": {
+        "queries": ["pet shop", "casa de ração"],
+        "included_type": "pet_store",
+    },
+    "doctor": {
+        "queries": ["clínica médica", "consultório médico"],
+        "included_type": "doctor",
+    },
+    "odontology": {
+        "queries": ["dentista", "clínica odontológica", "ortodontista", "odontologia estética"],
+        "included_type": "dental_clinic",
+    },
+    "aesthetics": {
+        "queries": ["clínica de estética", "estética facial", "estética corporal", "spa", "dermatologia estética"],
+        "included_type": "spa",
+    },
+    "lawyer": {
+        "queries": ["advogado", "escritório de advocacia", "advocacia trabalhista", "advogado de família"],
+        "included_type": "lawyer",
+    },
+    "accounting": {
+        "queries": ["contabilidade", "escritório de contabilidade", "contador", "assessoria contábil"],
+        "included_type": "accounting",
+    },
+    "real_estate": {
+        "queries": ["imobiliária", "corretor de imóveis", "administradora de condomínios"],
+        "included_type": "real_estate_agency",
+    },
+    "construction": {
+        "queries": ["construtora", "empresa de reforma", "empreiteira", "escritório de arquitetura", "materiais de construção"],
+        "included_type": "general_contractor",
+    },
+    "automotive": {
+        "queries": ["oficina mecânica", "auto center", "funilaria e pintura", "auto peças", "borracharia", "estética automotiva"],
+        "included_type": "car_repair",
+    },
+    "veterinary": {
+        "queries": ["clínica veterinária", "hospital veterinário", "veterinário"],
+        "included_type": "veterinary_care",
+    },
+    "furniture": {
+        "queries": ["loja de móveis", "móveis planejados", "marcenaria", "decoração", "designer de interiores"],
+        "included_type": "furniture_store",
+    },
+    "events": {
+        "queries": ["salão de festas", "buffet", "organização de eventos", "locação de equipamentos para festas"],
+        "included_type": "event_venue",
+    },
+    "education": {
+        "queries": ["escola de idiomas", "autoescola", "escola de música", "reforço escolar", "escola infantil"],
+        "included_type": "school",
+    },
+    "optics_jewelry": {
+        "queries": ["ótica", "joalheria", "relojoaria"],
+        "included_type": "jewelry_store", 
+    },
+    "solar_energy": {
+        "queries": ["energia solar", "instalador de energia solar", "placas solares", "aquecedor solar"],
+        "included_type": "electrician",
+    },
+    "insurance": {
+        "queries": ["corretora de seguros", "seguros", "seguradora"],
+        "included_type": "insurance_agency",
+    },
+    "clothing_store": {
+        "queries": ["loja de roupas", "loja de calçados", "moda feminina", "moda infantil", "loja de departamento"],
+        "included_type": "clothing_store",
+    }
 }
 
-# Referência de subtipos por categoria (não usado na API — documentação).
-# Tipos válidos: https://developers.google.com/maps/documentation/places/web-service/place-types
-INCLUDED_TYPES_MAP: dict[str, list[str]] = {
-    "restaurant": [
-        "restaurant",
-        "fast_food_restaurant",
-        "brazilian_restaurant",
-        "barbecue_restaurant",
-        "hamburger_restaurant",
-        "pizza_restaurant",
-        "seafood_restaurant",
-        "steak_house",
-        "sandwich_shop",
-    ],
-    "barber_shop": [
-        "barber_shop",
-    ],
-    "clothing_store": [
-        "clothing_store",
-        "shoe_store",
-        "department_store",
-    ],
-    "beauty_salon": [
-        "beauty_salon",
-        "hair_salon",
-        "nail_salon",
-        "spa",
-    ],
-    "pharmacy": [
-        "pharmacy",
-        "drugstore",
-    ],
-    "gym": [
-        "gym",
-        "fitness_center",
-        "sports_club",
-        "yoga_studio",
-    ],
-    "pet_store": [
-        "pet_store",
-        "veterinary_care",
-    ],
-    "doctor": [
-        "doctor",
-        "medical_clinic",
-        "dentist",
-        "dental_clinic",
-        "physiotherapist",
-    ],
+TYPE_LABEL_PT: dict[str, str] = {
+    key: val["queries"][0] for key, val in CATEGORY_CONFIG.items()
 }
 
 
@@ -85,6 +117,44 @@ def _circle_to_rectangle(lat: float, lng: float, radius_m: float) -> dict:
         "high": {"latitude": lat + delta_lat, "longitude": lng + delta_lng},
     }
 
+async def _fetch_places_for_query(client: httpx.AsyncClient, text_query: str, included_type: str | None, rectangle: dict, quantity: int) -> list:
+    collected = []
+    next_page_token = None
+    while len(collected) < quantity:
+        batch_size = min(20, quantity - len(collected))
+        body = {
+            "textQuery": text_query,
+            "maxResultCount": batch_size,
+            "locationRestriction": {"rectangle": rectangle},
+        }
+        if included_type:
+            body["includedType"] = included_type
+            body["strictTypeFiltering"] = True
+            
+        if next_page_token:
+            body["pageToken"] = next_page_token
+
+        response = await client.post(
+            f"{PLACES_API_BASE}/places:searchText",
+            headers={
+                "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+                "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,nextPageToken",
+            },
+            json=body,
+        )
+        data = response.json()
+        if "error" in data:
+            err = data["error"]
+            raise ValueError(
+                f"Erro na Places API ({err.get('status', response.status_code)}): "
+                f"{err.get('message', 'sem detalhe')}"
+            )
+        page_places = data.get("places", [])
+        collected.extend(page_places)
+        next_page_token = data.get("nextPageToken")
+        if not next_page_token or not page_places:
+            break
+    return collected
 
 async def _fetch_details(client: httpx.AsyncClient, place_id: str) -> dict:
     response = await client.get(
@@ -108,60 +178,57 @@ async def search_businesses(
 ) -> dict:
     coords = await get_coordinates(city, neighborhood, neighborhood_place_id)
     radius = 2000.0 if (neighborhood.strip() or neighborhood_place_id) else 15000.0
-    text_query = TYPE_LABEL_PT.get(business_type, business_type)
     rectangle = _circle_to_rectangle(coords["lat"], coords["lng"], radius)
 
-    collected_places = []
-    next_page_token = None
+    cat_conf = CATEGORY_CONFIG.get(business_type, {"queries": [business_type], "included_type": business_type})
+    queries = cat_conf["queries"]
+    inc_type = cat_conf.get("included_type")
+
+    # Para distribuir igualmente as buscas
+    qty_per_query = math.ceil(quantity / len(queries))
+    if qty_per_query < 1:
+        qty_per_query = 1
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        while len(collected_places) < quantity:
-            batch_size = min(20, quantity - len(collected_places))
-            body = {
-                "textQuery": text_query,
-                "includedType": business_type,
-                "strictTypeFiltering": True,
-                "maxResultCount": batch_size,
-                "locationRestriction": {"rectangle": rectangle},
-            }
-            if next_page_token:
-                body["pageToken"] = next_page_token
+        tasks = [
+            _fetch_places_for_query(client, q, inc_type, rectangle, qty_per_query)
+            for q in queries
+        ]
+        results_lists = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for res in results_lists:
+            if isinstance(res, Exception):
+                raise res
 
-            response = await client.post(
-                f"{PLACES_API_BASE}/places:searchText",
-                headers={
-                    "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
-                    "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,nextPageToken",
-                },
-                json=body,
-            )
-            data = response.json()
-            if "error" in data:
-                err = data["error"]
-                raise ValueError(
-                    f"Erro na Places API ({err.get('status', response.status_code)}): "
-                    f"{err.get('message', 'sem detalhe')}"
-                )
-            page_places = data.get("places", [])
-            collected_places.extend(page_places)
-            next_page_token = data.get("nextPageToken")
-            if not next_page_token or not page_places:
-                break
-
+        mixed_places = []
+        valid_lists = [res for res in results_lists if isinstance(res, list)]
+        max_len = max((len(l) for l in valid_lists), default=0)
+        for i in range(max_len):
+            for l in valid_lists:
+                if i < len(l):
+                    mixed_places.append(l[i])
+                    
+        seen = set()
+        unique_places = []
+        for p in mixed_places:
+            pid = p.get("id")
+            if pid and pid not in seen:
+                seen.add(pid)
+                unique_places.append(p)
+                
+        collected_places = unique_places[:quantity]
         total_checked = len(collected_places)
 
         # 2. Filtra duplicatas antes de fazer chamadas de detalhes
         new_places = []
         skipped_duplicates = 0
         for place in collected_places:
-            if not place.get("id"):
-                continue
             if place_id_exists(db, place["id"]):
                 skipped_duplicates += 1
             else:
                 new_places.append(place)
 
-        # 3. Busca detalhes de todos em paralelo — transforma N requisições sérias em ~1 round-trip
+        # 3. Busca detalhes de todos em paralelo
         details_list = await asyncio.gather(
             *[_fetch_details(client, p["id"]) for p in new_places],
             return_exceptions=True,

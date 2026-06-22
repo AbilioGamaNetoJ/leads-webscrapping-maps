@@ -9,7 +9,7 @@ from database.models import Business
 
 def check_null_types():
     with SessionLocal() as db:
-        businesses = db.query(Business).filter(Business.business_type == None).all()
+        businesses = db.query(Business).filter(getattr(Business, "business_type") == None).all()
         print(f"Found {len(businesses)} businesses without type.")
         for b in businesses[:20]:
             print(f"ID: {b.id} | Name: {b.name}")

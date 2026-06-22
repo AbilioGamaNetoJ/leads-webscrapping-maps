@@ -194,7 +194,7 @@
         <td class="cell-addr px-4 py-3 text-gray-500 max-w-xs">
           <span class="block truncate" title="${escapeHtml(biz.address)}">${escapeHtml(biz.address)}</span>
         </td>
-        <td class="cell-phone px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}</td>
+        <td class="cell-phone px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}${biz.phone && biz.phone !== 'Não informado' ? `<button onclick="copyPhone('${escapeHtml(biz.phone)}')" class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-gray-400 hover:text-brand-600 transition-colors align-middle flex-shrink-0" title="Copiar telefone"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>` : ''}</td>
         <td class="px-4 py-3 text-center">${buildWebsiteBadge(biz.has_website)}</td>
         <td class="px-4 py-3 text-center">${buildMapsLink(biz.maps_url)}</td>
       </tr>

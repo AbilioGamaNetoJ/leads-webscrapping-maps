@@ -9,7 +9,7 @@ from database.models import Business
 def fix_dog_island():
     with SessionLocal() as db:
         # Find anything with 'dog' or 'canina' that was misclassified as beauty_salon
-        businesses = db.query(Business).filter(Business.business_type == 'beauty_salon').all()
+        businesses = db.query(Business).filter(getattr(Business, "business_type") == 'beauty_salon').all()
         updated_count = 0
         for b in businesses:
             n = b.name.lower()

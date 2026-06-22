@@ -32,7 +32,7 @@ def classify_name(name: str) -> str | None:
 
 def update_types():
     with SessionLocal() as db:
-        businesses = db.query(Business).filter(Business.business_type == None).all()
+        businesses = db.query(Business).filter(getattr(Business, "business_type") == None).all()
         updated_count = 0
         unclassified = []
         for b in businesses:
