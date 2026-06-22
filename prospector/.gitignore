@@ -3,8 +3,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py[cod]
-*$py.class
 .Python
 env/
 venv/
@@ -12,9 +10,6 @@ venv/
 *.egg-info/
 dist/
 build/
-.vscode/
-prospector/.venv/
-prospector/__pycache__/
 
 # MCP
 .mcp.json

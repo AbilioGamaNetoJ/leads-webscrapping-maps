@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Prospector — Codex Create{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#F3EEFA',
+              100: '#E3D6F3',
+              200: '#C9B0E6',
+              300: '#A88AD4',
+              400: '#8B5CF6',
+              500: '#6B3FA0',
+              600: '#4C2893',
+              700: '#3B1F73',
+              800: '#2A1652',
+              900: '#1E0E3A',
+              950: '#0F0620',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .theme-toggle { transition: transform 0.3s ease; }
+    .theme-toggle:hover { transform: rotate(30deg); }
+
+    /* Dark mode for JS-generated autocomplete items */
+    .dark #citySuggestions,
+    .dark #neighborhoodSuggestions {
+      background-color: #17162a;
+      border-color: #252340;
+    }
+    .dark #citySuggestions li,
+    .dark #neighborhoodSuggestions li {
+      color: #9897b3;
+    }
+    .dark #citySuggestions li:hover,
+    .dark #neighborhoodSuggestions li:hover,
+    .dark #citySuggestions li.highlighted,
+    .dark #neighborhoodSuggestions li.highlighted {
+      background-color: #252340 !important;
+      color: #e2e1f0 !important;
+    }
+
+    /* Dark mode for JS-generated result rows */
+    .dark #resultsBody tr:hover {
+      background-color: #1d1c2e;
+    }
+    .dark #resultsBody .cell-name   { color: #f0eff8; }
+    .dark #resultsBody .cell-addr   { color: #a09fc0; }
+    .dark #resultsBody .cell-phone  { color: #c4c3da; }
+    .dark #resultsBody .badge-no-site {
+      background-color: #0d2e1e;
+      color: #4ade80;
+    }
+    .dark #resultsBody .badge-has-site {
+      background-color: #252340;
+      color: #9897b3;
+    }
+    .dark #resultsBody .maps-link {
+      color: #a78bfa;
+    }
+
+    /* Smooth color-scheme for native controls */
+    .dark { color-scheme: dark; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 dark:bg-[#0d0d1a] min-h-screen flex flex-col transition-colors">
+
+  <script>
+    (function() {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Header -->
+  <header class="bg-brand-900 dark:bg-brand-950 shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <img src="/static/logotipo-fundo-light.png" alt="Codex Create"
+             class="h-9 sm:h-14 w-auto rounded-lg object-contain flex-shrink-0 dark:hidden" />
+        <img src="/static/logotipo-fundo-dark.png" alt="Codex Create"
+             class="h-9 sm:h-14 w-auto rounded-lg object-contain flex-shrink-0 hidden dark:block" />
+        <div class="min-w-0">
+          <span class="text-white font-bold text-sm sm:text-lg leading-tight block truncate">Prospector</span>
+          <span class="text-brand-300 text-xs font-medium hidden sm:block">Codex Create</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <nav class="flex gap-1">
+          <a href="/"
+             class="min-h-[44px] px-4 py-2.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap flex items-center
+                    {% if request.url.path == '/' %}bg-brand-800 text-white{% endif %}">
+            Buscar
+          </a>
+          <a href="/historico"
+             class="min-h-[44px] px-4 py-2.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap flex items-center
+                    {% if request.url.path == '/historico' %}bg-brand-800 text-white{% endif %}">
+            Histórico
+          </a>
+        </nav>
+        <button id="themeToggle" type="button"
+          class="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-brand-200 hover:text-white hover:bg-brand-800 transition-colors theme-toggle"
+          aria-label="Alternar modo escuro">
+          <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white dark:bg-[#111021] border-t border-gray-200 dark:border-[#1d1c2e] mt-auto transition-colors">
+    <div class="max-w-7xl mx-auto px-4 py-3 text-center text-xs text-gray-400 dark:text-gray-500">
+      Codex Create — Uso interno &middot; Prospector v1.1
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      const toggle = document.getElementById('themeToggle');
+      const sun = document.getElementById('sunIcon');
+      const moon = document.getElementById('moonIcon');
+      const html = document.documentElement;
+
+      function setTheme(dark) {
+        if (dark) {
+          html.classList.add('dark');
+          sun.classList.remove('hidden');
+          moon.classList.add('hidden');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          html.classList.remove('dark');
+          sun.classList.add('hidden');
+          moon.classList.remove('hidden');
+          localStorage.setItem('theme', 'light');
+        }
+      }
+
+      toggle.addEventListener('click', function() {
+        setTheme(!html.classList.contains('dark'));
+      });
+
+      if (html.classList.contains('dark')) {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+      }
+    })();
+  </script>
+
+</body>
+</html>

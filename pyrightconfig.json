@@ -1,0 +1,9 @@
+{
+  "venvPath": "/home/abiliodev/Documentos/AUTOMATION PROJECTS/webscrapping-clientes/prospector",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "."
+    }
+  ]
+}

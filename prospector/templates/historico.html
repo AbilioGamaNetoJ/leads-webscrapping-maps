@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Leads — Prospector Codex Create{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Page header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-gray-800 dark:text-white">Histórico de Leads</h1>
+      <p class="text-sm text-gray-500 dark:text-[#a09fc0] mt-0.5">{{ total }} negócio{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/export" target="_blank"
+        class="flex items-center gap-2 border border-gray-300 dark:border-[#252340] text-gray-700 dark:text-[#9897b3] hover:bg-gray-50 dark:hover:bg-[#1d1c2e]
+                font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        </svg>
+        Exportar XLSX
+      </a>
+      <a href="/export?only_without_website=true" target="_blank"
+        class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white
+               font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        </svg>
+        Só sem site
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" action="/historico"
+    class="bg-white dark:bg-[#17162a] rounded-xl border border-gray-200 dark:border-[#252340] shadow-sm px-5 py-4 flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[180px]">
+      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Buscar por nome</label>
+      <input type="text" name="name" value="{{ name }}" placeholder="Digite o nome..."
+        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none
+               focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+    </div>
+    <div class="min-w-[160px]">
+      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Possui site?</label>
+      <select name="has_website"
+        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm bg-white focus:outline-none
+               focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
+        <option value="" {% if not has_website %}selected{% endif %}>Todos</option>
+        <option value="true" {% if has_website == 'true' %}selected{% endif %}>Sim</option>
+        <option value="false" {% if has_website == 'false' %}selected{% endif %}>Não</option>
+      </select>
+    </div>
+    <div class="min-w-[180px]">
+      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Categoria</label>
+      <select name="business_type"
+        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm bg-white focus:outline-none
+               focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
+        <option value="" {% if not business_type %}selected{% endif %}>Todas</option>
+        {% for val, label in TYPE_LABEL_PT.items() %}
+        <option value="{{ val }}" {% if business_type == val %}selected{% endif %}>{{ label.title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit"
+      class="bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm">
+      Filtrar
+    </button>
+    {% if name or has_website or business_type %}
+    <a href="/historico"
+      class="text-sm text-gray-500 dark:text-[#5c5b78] hover:text-gray-700 dark:hover:text-[#9897b3] py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1d1c2e] transition-colors">
+      Limpar
+    </a>
+    {% endif %}
+  </form>
+
+  <!-- Selection action bar -->
+  <div id="selectionBar" class="hidden items-center justify-between bg-red-50 dark:bg-[#2a1117] border border-red-200 dark:border-[#4a1a25] rounded-xl px-5 py-3">
+    <span class="text-sm font-medium text-red-700 dark:text-[#f87171]"><span id="selectionCount">0</span> selecionado(s)</span>
+    <div class="flex gap-2">
+      <button id="clearSelectionBtn" type="button"
+        class="text-sm text-gray-600 dark:text-[#9897b3] hover:text-gray-800 dark:hover:text-[#e2e1f0] px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1d1c2e] transition-colors">
+        Cancelar
+      </button>
+      <button id="deleteSelectedBtn" type="button"
+        class="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Excluir selecionados
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  {% if businesses %}
+  <div class="bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
+          <tr>
+            <th class="px-4 py-3 w-10">
+              <input type="checkbox" id="selectAll"
+                class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
+            </th>
+            <th class="px-4 py-3 text-left font-medium">Nome</th>
+            <th class="px-4 py-3 text-left font-medium">Endereço</th>
+            <th class="px-4 py-3 text-left font-medium">Telefone</th>
+            <th class="px-4 py-3 text-left font-medium">Tipo</th>
+            <th class="px-4 py-3 text-center font-medium">Possui Site?</th>
+            <th class="px-4 py-3 text-center font-medium">Maps</th>
+            <th class="px-4 py-3 text-left font-medium">Salvo em</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-[#1d1c2e] text-gray-700 dark:text-[#c4c3da]">
+          {% for biz in businesses %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors" data-id="{{ biz.id }}">
+            <td class="px-4 py-3">
+              <input type="checkbox" value="{{ biz.id }}"
+                class="row-checkbox w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
+            </td>
+            <td class="px-4 py-3 font-medium text-gray-800 dark:text-[#f0eff8]">{{ biz.name }}</td>
+            <td class="px-4 py-3 text-gray-500 dark:text-[#a09fc0] max-w-xs">
+              <span class="line-clamp-2">{{ biz.address or 'Não informado' }}</span>
+            </td>
+            <td class="px-4 py-3 text-gray-600 dark:text-[#c4c3da] whitespace-nowrap">{{ biz.phone or 'Não informado' }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-[#c4c3da] whitespace-nowrap capitalize">
+              {{ TYPE_LABEL_PT.get(biz.business_type, biz.business_type) if biz.business_type else 'Não informado' }}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if biz.has_website %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-[#252340] text-gray-600 dark:text-[#9897b3]">
+                  Sim
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-[#0d2e1e] text-green-700 dark:text-[#4ade80]">
+                  Não
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if biz.maps_url %}
+              <a href="{{ biz.maps_url }}" target="_blank"
+                class="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 font-medium text-xs transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Abrir
+              </a>
+              {% else %}
+                <span class="text-gray-300 text-xs">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-400 dark:text-[#8c8ba8] text-xs whitespace-nowrap">
+              {{ biz.created_at.strftime('%d/%m/%Y %H:%M') if biz.created_at else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="px-5 py-4 border-t border-gray-100 dark:border-[#1d1c2e] flex items-center justify-between text-sm text-gray-600 dark:text-[#c4c3da]">
+      <span>Página {{ page }} de {{ total_pages }}</span>
+      <div class="flex gap-2">
+        {% if page > 1 %}
+        <a href="/historico?page={{ page - 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
+          class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+          ← Anterior
+        </a>
+        {% endif %}
+        {% if page < total_pages %}
+        <a href="/historico?page={{ page + 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
+          class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+          Próxima →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm p-12 text-center">
+    <div class="w-14 h-14 bg-gray-100 dark:bg-[#251f45] rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-gray-400 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+    </div>
+    <h3 class="text-gray-700 dark:text-[#c4c3da] font-semibold mb-1">Nenhum lead encontrado</h3>
+    <p class="text-gray-400 dark:text-[#5c5b78] text-sm">
+      {% if name or has_website or business_type %}
+        Nenhum resultado para os filtros aplicados.
+      {% else %}
+        Faça sua primeira busca para começar a prospectar.
+      {% endif %}
+    </p>
+    {% if name or has_website or business_type %}
+    <a href="/historico" class="inline-block mt-3 text-brand-600 hover:underline text-sm">Limpar filtros</a>
+    {% else %}
+    <a href="/" class="inline-block mt-3 text-brand-600 hover:underline text-sm">Ir para busca</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+(function () {
+  const selectionBar = document.getElementById('selectionBar');
+  const selectionCount = document.getElementById('selectionCount');
+  const selectAll = document.getElementById('selectAll');
+  const deleteBtn = document.getElementById('deleteSelectedBtn');
+  const clearBtn = document.getElementById('clearSelectionBtn');
+
+  function getChecked() {
+    return [...document.querySelectorAll('.row-checkbox:checked')];
+  }
+
+  function updateBar() {
+    const checked = getChecked();
+    if (checked.length > 0) {
+      selectionCount.textContent = checked.length;
+      selectionBar.classList.remove('hidden');
+      selectionBar.classList.add('flex');
+    } else {
+      selectionBar.classList.add('hidden');
+      selectionBar.classList.remove('flex');
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+    const all = document.querySelectorAll('.row-checkbox');
+    if (checked.length === 0) {
+      selectAll.indeterminate = false;
+      selectAll.checked = false;
+    } else if (checked.length === all.length) {
+      selectAll.indeterminate = false;
+      selectAll.checked = true;
+    } else {
+      selectAll.indeterminate = true;
+    }
+  }
+
+  document.querySelectorAll('.row-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBar);
+  });
+
+  selectAll.addEventListener('change', function () {
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+      cb.checked = this.checked;
+    });
+    updateBar();
+  });
+
+  clearBtn.addEventListener('click', function () {
+    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+    selectAll.checked = false;
+    updateBar();
+  });
+
+  deleteBtn.addEventListener('click', async function () {
+    const ids = getChecked().map(cb => parseInt(cb.value));
+    if (!confirm(`Excluir ${ids.length} negócio(s) permanentemente?`)) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Excluindo...';
+
+    try {
+      const res = await fetch('/historico', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Falha ao excluir.');
+      window.location.reload();
+    } catch {
+      alert('Erro ao excluir. Tente novamente.');
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = 'Excluir selecionados';
+    }
+  });
+})();
+</script>
+{% endblock %}
