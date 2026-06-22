@@ -182,6 +182,10 @@
     summaryBar.classList.remove('hidden');
     summaryBar.classList.add('fade-in');
 
+    // Update export button to reflect current filter
+    const ids = results.map(r => r.id).join(',');
+    exportBtn.href = `/export?ids=${ids}`;
+
     if (results.length === 0) {
       noResultsState.classList.remove('hidden');
       noResultsState.classList.add('fade-in');
@@ -203,10 +207,6 @@
     resultsCount.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
     resultsCard.classList.remove('hidden');
     resultsCard.classList.add('fade-in');
-
-    // Update export button to reflect current filter
-    const onlyWithout = document.getElementById('only_without_website').checked;
-    exportBtn.href = onlyWithout ? '/export?only_without_website=true' : '/export';
   }
 
   function showError(message) {

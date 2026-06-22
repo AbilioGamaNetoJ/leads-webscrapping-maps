@@ -9,9 +9,16 @@ router = APIRouter()
 
 
 @router.get("/export")
-def export(only_without_website: bool = False, db: Session = Depends(get_db)):
+def export(only_without_website: bool = False, ids: str | None = None, db: Session = Depends(get_db)):
     query = db.query(Business)
-    if only_without_website:
+    
+    if ids is not None:
+        id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
+        if id_list:
+            query = query.filter(Business.id.in_(id_list))
+        else:
+            query = query.filter(Business.id == -1)
+    elif only_without_website:
         query = query.filter(Business.has_website == False)
 
     businesses = query.order_by(Business.created_at.desc()).all()

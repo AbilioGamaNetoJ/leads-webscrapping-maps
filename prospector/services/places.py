@@ -276,6 +276,7 @@ async def search_businesses(
         new_saved += 1
         results.append(
             {
+                "id": business.id,
                 "name": name,
                 "address": address,
                 "phone": phone,
