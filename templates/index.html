@@ -39,21 +39,16 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="business_type">Tipo de Negócio *</label>
-          <select id="business_type" name="business_type" required
-            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
-            <option value="">Selecione...</option>
-            <option value="restaurant">Restaurante</option>
-            <option value="barber_shop">Barbearia</option>
-            <option value="clothing_store">Loja de Roupas</option>
-            <option value="beauty_salon">Salão de Beleza</option>
-            <option value="pharmacy">Farmácia</option>
-            <option value="bakery">Padaria</option>
-            <option value="gym">Academia</option>
-            <option value="supermarket">Supermercado</option>
-            <option value="pet_store">Petshop</option>
-            <option value="doctor">Clínica / Consultório</option>
-          </select>
+          <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="business_type_search">Tipo de Negócio *</label>
+          <div class="relative">
+            <input id="business_type_search" type="text" required placeholder="Ex: restaurante, barbearia, dentista..." autocomplete="off"
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+            <input id="business_type" name="business_type" type="hidden" />
+            <ul id="businessTypeSuggestions"
+              class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
+            </ul>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-[#5c5b78] mt-1">Digite o nome e escolha na lista</p>
         </div>
 
         <div>
@@ -164,6 +159,7 @@
               <th class="px-4 py-3 text-left font-medium">Telefone</th>
               <th class="px-4 py-3 text-center font-medium">Possui Site?</th>
               <th class="px-4 py-3 text-center font-medium">Maps</th>
+              <th class="px-4 py-3 text-center font-medium">WhatsApp</th>
             </tr>
           </thead>
           <tbody id="resultsBody" class="divide-y divide-gray-100 dark:divide-[#1d1c2e] text-gray-700 dark:text-[#c4c3da]">
@@ -175,5 +171,6 @@
   </div>
 </div>
 
+<script id="businessTypesData" type="application/json">{{ business_types | tojson }}</script>
 <script src="/static/app.js"></script>
 {% endblock %}

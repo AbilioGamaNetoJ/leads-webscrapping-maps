@@ -51,11 +51,21 @@
         <option value="false" {% if has_website == 'false' %}selected{% endif %}>Não</option>
       </select>
     </div>
+    <div class="min-w-[180px]">
+      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Tipo de negócio</label>
+      <select name="business_type"
+        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
+        <option value="" {% if not business_type %}selected{% endif %}>Todos</option>
+        {% for item in business_types %}
+        <option value="{{ item.value }}" {% if business_type == item.value %}selected{% endif %}>{{ item.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <button type="submit"
       class="bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm">
       Filtrar
     </button>
-    {% if name or has_website %}
+    {% if name or has_website or business_type %}
     <a href="/historico"
       class="text-sm text-gray-500 dark:text-[#5c5b78] hover:text-gray-700 dark:hover:text-[#9897b3] py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1d1c2e] transition-colors">
       Limpar
@@ -94,10 +104,12 @@
                 class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
             </th>
             <th class="px-4 py-3 text-left font-medium">Nome</th>
+            <th class="px-4 py-3 text-left font-medium">Tipo</th>
             <th class="px-4 py-3 text-left font-medium">Endereço</th>
             <th class="px-4 py-3 text-left font-medium">Telefone</th>
             <th class="px-4 py-3 text-center font-medium">Possui Site?</th>
             <th class="px-4 py-3 text-center font-medium">Maps</th>
+            <th class="px-4 py-3 text-center font-medium">WhatsApp</th>
             <th class="px-4 py-3 text-left font-medium">Salvo em</th>
           </tr>
         </thead>
@@ -109,6 +121,7 @@
                 class="row-checkbox w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
             </td>
             <td class="px-4 py-3 font-medium text-gray-800 dark:text-[#f0eff8]">{{ biz.name }}</td>
+            <td class="px-4 py-3 text-gray-500 dark:text-[#a09fc0]">{{ type_labels.get(biz.business_type, biz.business_type or 'Não informado') }}</td>
             <td class="px-4 py-3 text-gray-500 dark:text-[#a09fc0] max-w-xs">
               <span class="line-clamp-2">{{ biz.address or 'Não informado' }}</span>
             </td>
@@ -138,6 +151,20 @@
                 <span class="text-gray-300 text-xs">—</span>
               {% endif %}
             </td>
+            <td class="px-4 py-3 text-center">
+              {% set wa_url = biz.phone | whatsapp_url %}
+              {% if wa_url %}
+              <a href="{{ wa_url }}" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Enviar mensagem
+              </a>
+              {% else %}
+                <span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>
+              {% endif %}
+            </td>
             <td class="px-4 py-3 text-gray-400 dark:text-[#8c8ba8] text-xs whitespace-nowrap">
               {{ biz.created_at.strftime('%d/%m/%Y %H:%M') if biz.created_at else '—' }}
             </td>
@@ -153,13 +180,13 @@
       <span>Página {{ page }} de {{ total_pages }}</span>
       <div class="flex gap-2">
         {% if page > 1 %}
-        <a href="/historico?page={{ page - 1 }}&name={{ name }}&has_website={{ has_website }}"
+        <a href="/historico?page={{ page - 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
           class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
           ← Anterior
         </a>
         {% endif %}
         {% if page < total_pages %}
-        <a href="/historico?page={{ page + 1 }}&name={{ name }}&has_website={{ has_website }}"
+        <a href="/historico?page={{ page + 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
           class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
           Próxima →
         </a>
@@ -179,13 +206,13 @@
     </div>
     <h3 class="text-gray-700 dark:text-[#c4c3da] font-semibold mb-1">Nenhum lead encontrado</h3>
     <p class="text-gray-400 dark:text-[#5c5b78] text-sm">
-      {% if name or has_website %}
+      {% if name or has_website or business_type %}
         Nenhum resultado para os filtros aplicados.
       {% else %}
         Faça sua primeira busca para começar a prospectar.
       {% endif %}
     </p>
-    {% if name or has_website %}
+    {% if name or has_website or business_type %}
     <a href="/historico" class="inline-block mt-3 text-brand-600 hover:underline text-sm">Limpar filtros</a>
     {% else %}
     <a href="/" class="inline-block mt-3 text-brand-600 hover:underline text-sm">Ir para busca</a>

@@ -26,7 +26,9 @@
 
 | Date | Decision | Rationale | Impact |
 |---|---|---|---|
-| {DATE} | {DECISION} | {RATIONALE} | {IMPACT} |
+| 2026-08-20 | Tipo de negócio virou combobox filtrável no cliente | Reutiliza o padrão de autocomplete de cidade/bairro e o catálogo de `includedType` da Places API | Usuário busca por nome em PT-BR; o valor enviado continua sendo o type da API |
+| 2026-08-20 | Nichos comerciais usam catálogo interno e consultas textuais | A maioria não é um `includedType` aceito pela Places API | Os 92 nichos e 387 termos ficam disponíveis sem causar requisições inválidas; o tipo fica salvo no lead |
+| 2026-08-20 | Botão WhatsApp nas listas de busca e histórico | O telefone internacional do Maps vira `https://wa.me/{dígitos}` | Contato direto com o lead sem copiar o número |
 
 ---
 
@@ -65,6 +67,7 @@
 | # | Task | Status | Started |
 |---|---|---|---|
 | 1 | {TASK} | {STATUS} | {DATE} |
+| 2 | Expansão do catálogo de tipos de negócio | Concluída | 2026-08-20 |
 
 ---
 

@@ -181,18 +181,15 @@ prospector/
 
 ## 🏪 Tipos de Negócio Suportados
 
-| Label | Valor (Places API) |
-|---|---|
-| 🍽️ Restaurante | `restaurant` |
-| 💈 Barbearia | `barber_shop` |
-| 👕 Loja de Roupas | `clothing_store` |
-| 💅 Salão de Beleza | `beauty_salon` |
-| 💊 Farmácia | `pharmacy` |
-| 🥖 Padaria | `bakery` |
-| 💪 Academia | `gym` |
-| 🛒 Supermercado | `supermarket` |
-| 🐾 Petshop | `pet_store` |
-| 🏥 Clínica / Consultório | `doctor` |
+O campo **Tipo de Negócio** é um combobox pesquisável com 140 opções. Além dos
+tipos oficiais da Places API, ele inclui 92 nichos comerciais — como móveis
+planejados, reformas, serviços automotivos, eventos, saúde e construção — e
+os respectivos termos de busca fornecidos pelo time comercial.
+
+O catálogo está centralizado em
+[`services/business_type_catalog.py`](./services/business_type_catalog.py).
+Para categorias sem um tipo oficial da Places API, a busca usa os termos do
+catálogo sem enviar um `includedType` inválido.
 
 ---
 

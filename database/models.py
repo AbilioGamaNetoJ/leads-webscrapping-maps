@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime
-from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
@@ -17,4 +18,5 @@ class Business(Base):
     phone = Column(String)
     maps_url = Column(Text)
     has_website = Column(Boolean, nullable=False, default=False)
+    business_type = Column(String, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)

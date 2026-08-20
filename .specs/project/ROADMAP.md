@@ -15,6 +15,12 @@
 | 1 | {FEATURE_1} | {STATUS} | {S/M/L} |
 | 2 | {FEATURE_2} | {STATUS} | {S/M/L} |
 
+## Recent Changes
+
+| Date | Feature | Status |
+|---|---|---|
+| 2026-08-20 | Catálogo de 92 nichos comerciais para Tipo de Negócio | Done |
+
 ## Upcoming Versions
 
 ### v{NEXT_VERSION}

@@ -1,6 +1,9 @@
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
 from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+
+from services.business_types import type_labels
 
 
 def generate_xlsx(businesses: list) -> BytesIO:
@@ -8,7 +11,7 @@ def generate_xlsx(businesses: list) -> BytesIO:
     ws = wb.active
     ws.title = "Negócios Prospectados"
 
-    headers = ["Nome do Negócio", "Endereço", "Telefone", "Possui Site?", "Link do Maps"]
+    headers = ["Nome do Negócio", "Tipo de Negócio", "Endereço", "Telefone", "Possui Site?", "Link do Maps"]
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
 
@@ -18,18 +21,21 @@ def generate_xlsx(businesses: list) -> BytesIO:
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
+    labels = type_labels()
     for row, biz in enumerate(businesses, 2):
         ws.cell(row=row, column=1, value=biz.name)
-        ws.cell(row=row, column=2, value=biz.address or "Não informado")
-        ws.cell(row=row, column=3, value=biz.phone or "Não informado")
-        ws.cell(row=row, column=4, value="Sim" if biz.has_website else "Não")
-        ws.cell(row=row, column=5, value=biz.maps_url or "")
+        ws.cell(row=row, column=2, value=labels.get(biz.business_type, biz.business_type or "Não informado"))
+        ws.cell(row=row, column=3, value=biz.address or "Não informado")
+        ws.cell(row=row, column=4, value=biz.phone or "Não informado")
+        ws.cell(row=row, column=5, value="Sim" if biz.has_website else "Não")
+        ws.cell(row=row, column=6, value=biz.maps_url or "")
 
     ws.column_dimensions["A"].width = 35
-    ws.column_dimensions["B"].width = 45
-    ws.column_dimensions["C"].width = 22
-    ws.column_dimensions["D"].width = 15
-    ws.column_dimensions["E"].width = 55
+    ws.column_dimensions["B"].width = 30
+    ws.column_dimensions["C"].width = 45
+    ws.column_dimensions["D"].width = 22
+    ws.column_dimensions["E"].width = 15
+    ws.column_dimensions["F"].width = 55
 
     output = BytesIO()
     wb.save(output)

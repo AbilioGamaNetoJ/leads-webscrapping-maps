@@ -1,13 +1,20 @@
 from pathlib import Path
-from fastapi import APIRouter, Depends, Request, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from database.connection import get_db
 from database.models import Business
+from services.business_types import as_dicts, type_labels
+from services.whatsapp import to_whatsapp_url
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
+templates.env.filters["whatsapp_url"] = to_whatsapp_url
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 class DeleteRequest(BaseModel):
@@ -15,7 +22,7 @@ class DeleteRequest(BaseModel):
 
 
 @router.delete("/historico")
-def delete_businesses(payload: DeleteRequest, db: Session = Depends(get_db)):
+def delete_businesses(payload: DeleteRequest, db: DbSession):
     if not payload.ids:
         raise HTTPException(status_code=400, detail="Nenhum ID informado.")
     deleted = db.query(Business).filter(Business.id.in_(payload.ids)).delete(synchronize_session=False)
@@ -31,7 +38,9 @@ def history(
     page: int = 1,
     name: str = "",
     has_website: str = "",
-    db: Session = Depends(get_db),
+    business_type: str = "",
+    *,
+    db: DbSession,
 ):
     query = db.query(Business)
 
@@ -42,6 +51,9 @@ def history(
         query = query.filter(Business.has_website == True)
     elif has_website == "false":
         query = query.filter(Business.has_website == False)
+
+    if business_type:
+        query = query.filter(Business.business_type == business_type)
 
     total = query.count()
     businesses = (
@@ -62,5 +74,8 @@ def history(
             "total": total,
             "name": name,
             "has_website": has_website,
+            "business_type": business_type,
+            "business_types": as_dicts(),
+            "type_labels": type_labels(),
         },
     )

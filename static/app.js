@@ -113,6 +113,186 @@
   setupAutocomplete(cityInput, cityList, 'city', null);
   setupAutocomplete(neighborhoodInput, neighborhoodList, 'neighborhood', () => cityInput.value.trim());
 
+  // --- Business type combobox ---
+
+  function normalizeText(value) {
+    return String(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  function loadBusinessTypes() {
+    const el = document.getElementById('businessTypesData');
+    if (!el) return [];
+    try {
+      return JSON.parse(el.textContent);
+    } catch {
+      return [];
+    }
+  }
+
+  function setupBusinessTypeAutocomplete() {
+    const inputEl = document.getElementById('business_type_search');
+    const hiddenEl = document.getElementById('business_type');
+    const listEl = document.getElementById('businessTypeSuggestions');
+    const types = loadBusinessTypes();
+    const maxItems = 8;
+    let debounceTimer = null;
+    let activeIndex = -1;
+
+    function getItems() {
+      return listEl.querySelectorAll('li');
+    }
+
+    function closeSuggestions() {
+      listEl.classList.add('hidden');
+      listEl.innerHTML = '';
+      activeIndex = -1;
+    }
+
+    function selectType(type) {
+      inputEl.value = type.label;
+      hiddenEl.value = type.value;
+      closeSuggestions();
+    }
+
+    function filterTypes(query) {
+      const q = normalizeText(query);
+      if (!q) return types.slice(0, maxItems);
+
+      const scored = types
+        .map((type) => {
+          const label = normalizeText(type.label);
+          const value = normalizeText(type.value);
+          const aliases = (type.aliases || []).map(normalizeText);
+          const haystack = [label, value, ...aliases];
+          const starts = haystack.some((text) => text.startsWith(q));
+          const includes = haystack.some((text) => text.includes(q));
+          if (!includes) return null;
+          return { type, score: starts ? 0 : 1 };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score || a.type.label.localeCompare(b.type.label, 'pt-BR'));
+
+      return scored.slice(0, maxItems).map((item) => item.type);
+    }
+
+    function renderSuggestions(suggestions) {
+      listEl.innerHTML = '';
+      activeIndex = -1;
+      if (!suggestions.length) { closeSuggestions(); return; }
+
+      suggestions.forEach((type) => {
+        const li = document.createElement('li');
+        li.className =
+          'px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 dark:text-[#9897b3] dark:hover:bg-[#252340] dark:hover:text-[#e2e1f0] transition-colors';
+        li.textContent = type.label;
+        li.dataset.value = type.value;
+        li.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          selectType(type);
+        });
+        listEl.appendChild(li);
+      });
+
+      listEl.classList.remove('hidden');
+    }
+
+    function highlightItem(index) {
+      const items = getItems();
+      const isDark = document.documentElement.classList.contains('dark');
+      items.forEach((el, i) => {
+        const active = i === index;
+        el.classList.toggle('bg-indigo-50', active && !isDark);
+        el.classList.toggle('text-indigo-700', active && !isDark);
+        el.classList.toggle('highlighted', active);
+      });
+    }
+
+    function showForQuery(query) {
+      renderSuggestions(filterTypes(query));
+    }
+
+    function resolveExactMatch(query) {
+      const q = normalizeText(query);
+      if (!q) return null;
+      const exact = types.filter((type) => {
+        const label = normalizeText(type.label);
+        const aliases = (type.aliases || []).map(normalizeText);
+        return label === q || aliases.includes(q);
+      });
+      return exact.length === 1 ? exact[0] : null;
+    }
+
+    inputEl.addEventListener('input', () => {
+      hiddenEl.value = '';
+      inputEl.setCustomValidity('');
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => showForQuery(inputEl.value), 80);
+    });
+
+    inputEl.addEventListener('focus', () => {
+      showForQuery(inputEl.value);
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      const items = getItems();
+      if (!items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, items.length - 1);
+        highlightItem(activeIndex);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        highlightItem(activeIndex);
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        const el = items[activeIndex];
+        const match = types.find((type) => type.value === el.dataset.value);
+        if (match) selectType(match);
+      } else if (e.key === 'Escape') {
+        closeSuggestions();
+      }
+    });
+
+    inputEl.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (!hiddenEl.value) {
+          const match = resolveExactMatch(inputEl.value);
+          if (match) selectType(match);
+        }
+        closeSuggestions();
+      }, 150);
+    });
+
+    inputEl.addEventListener('invalid', () => {
+      if (!hiddenEl.value) {
+        inputEl.setCustomValidity('Selecione um tipo de negócio da lista.');
+      }
+    });
+
+    return {
+      ensureSelected() {
+        if (hiddenEl.value) return true;
+        const match = resolveExactMatch(inputEl.value);
+        if (match) {
+          selectType(match);
+          return true;
+        }
+        inputEl.setCustomValidity('Selecione um tipo de negócio da lista.');
+        inputEl.reportValidity();
+        showForQuery(inputEl.value);
+        return false;
+      },
+    };
+  }
+
+  const businessTypeField = setupBusinessTypeAutocomplete();
+
   // --- Search form ---
 
   const form = document.getElementById('searchForm');
@@ -160,6 +340,30 @@
       </svg>Abrir</a>`;
   }
 
+  function toWhatsAppUrl(phone) {
+    if (!phone || phone === 'Não informado') return '';
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.length < 10) return '';
+    if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
+      digits = `55${digits}`;
+    }
+    // DDD + 8 digits (no leading 9): insert 9 only in the WhatsApp link
+    if (digits.startsWith('55') && digits.length === 12) {
+      digits = `${digits.slice(0, 4)}9${digits.slice(4)}`;
+    }
+    return `https://wa.me/${digits}`;
+  }
+
+  function buildWhatsAppButton(phone) {
+    const url = toWhatsAppUrl(phone);
+    if (!url) return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+      class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>Enviar mensagem</a>`;
+  }
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -197,6 +401,7 @@
         <td class="cell-phone px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}${biz.phone && biz.phone !== 'Não informado' ? `<button onclick="copyPhone('${escapeHtml(biz.phone)}')" class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-gray-400 hover:text-brand-600 transition-colors align-middle flex-shrink-0" title="Copiar telefone"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>` : ''}</td>
         <td class="px-4 py-3 text-center">${buildWebsiteBadge(biz.has_website)}</td>
         <td class="px-4 py-3 text-center">${buildMapsLink(biz.maps_url)}</td>
+        <td class="px-4 py-3 text-center">${buildWhatsAppButton(biz.phone)}</td>
       </tr>
     `).join('');
 
@@ -219,6 +424,7 @@
 
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
+    if (!businessTypeField.ensureSelected()) return;
     setLoading(true);
 
     const payload = {
