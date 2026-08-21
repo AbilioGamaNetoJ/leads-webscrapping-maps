@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saindo — Prospector</title>
+</head>
+<body>
+  <main style="min-height:100vh;display:grid;place-items:center;background:#f8f8fa;color:#334155;font:14px system-ui,sans-serif;text-align:center;padding:24px">
+    <div>
+      <img src="/static/Logotipo_login-clerk.svg" alt="Codex Create" style="width:112px;height:112px;object-fit:contain;margin:0 auto 16px" />
+      <p>Encerrando sua sessão...</p>
+    </div>
+  </main>
+  {% if clerk_publishable_key and clerk_frontend_api_url %}
+  <script defer crossorigin="anonymous" src="{{ clerk_frontend_api_url }}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}" src="{{ clerk_frontend_api_url }}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+  <script>
+    window.addEventListener('load', async function () {
+      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+      await fetch('/auth/session', { method: 'DELETE', headers: { Origin: window.location.origin } });
+      await Clerk.signOut();
+      window.location.assign('/login');
+    });
+  </script>
+  {% else %}
+  <script>window.location.assign('/login');</script>
+  {% endif %}
+</body>
+</html>

@@ -13,6 +13,8 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 - 📋 Resumo pós-busca: novos encontrados · sem site · já vistos antes
 - 📥 Exportação XLSX com todas as colunas necessárias para abordagem comercial
 - 📜 Histórico paginado com filtro por nome e por presença de site
+- 🔐 Login por e-mail e senha, com convites administrados pelo proprietário
+- 👤 Perfis locais, papéis `admin`/`member` e bloqueio imediato de acesso
 
 ---
 
@@ -27,6 +29,7 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 | 📦 ORM | SQLAlchemy (síncrono) |
 | 🌐 HTTP client | httpx |
 | 📑 Exportação | openpyxl |
+| 🔐 Autenticação | Clerk + JWT de sessão + cookie HTTP-only |
 | 🔗 API externa | Google Places API (New) + Geocoding API |
 
 ---
@@ -36,6 +39,7 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 - 🐍 Python 3.12+
 - ☁️ Conta no [Neon](https://neon.tech) (free tier disponível)
 - ☁️ Projeto no Google Cloud com **Places API (New)** e **Geocoding API** habilitadas
+- 🔐 Aplicação no [Clerk](https://clerk.com) com login por e-mail e senha
 
 ---
 
@@ -54,6 +58,15 @@ Edite o `.env`:
 ```env
 GOOGLE_MAPS_API_KEY=sua_chave_aqui
 DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
+APP_ENV=development
+APP_URL=http://localhost:8000
+SESSION_SECRET_KEY=gere_uma_chave_longa_e_aleatoria
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_FRONTEND_API_URL=https://seu-frontend-api.clerk.accounts.dev
+CLERK_SECRET_KEY=sk_test_...
+CLERK_JWT_KEY=chave_publica_jwt_do_clerk
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
+CLERK_ADMIN_USER_ID=user_...
 ```
 
 ### 2️⃣ Criar o ambiente virtual
@@ -77,7 +90,17 @@ Com o venv ativo:
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Iniciar o servidor
+### 4️⃣ Aplicar a migração
+
+```bash
+alembic upgrade head
+```
+
+Ela preserva (ou cria, se o Neon estiver vazio) a tabela legada `businesses`,
+cria `app_users` e garante as colunas de avaliação dos leads. Execute-a uma vez
+para cada banco Neon antes do deploy.
+
+### 5️⃣ Iniciar o servidor
 
 ```bash
 uvicorn main:app --reload
@@ -85,9 +108,43 @@ uvicorn main:app --reload
 
 A aplicação ficará disponível em `http://localhost:8000`.
 
-> 💡 A tabela `businesses` é criada automaticamente no banco na primeira execução.
+> 💡 A tabela `businesses` continua sendo criada automaticamente no banco na primeira execução.
 
 > ⚠️ **Atenção:** sempre ative o venv (`source .venv/bin/activate`) antes de rodar o servidor em uma nova sessão do terminal.
+
+### 6️⃣ Testes
+
+Instale as dependências de desenvolvimento e rode a suíte (SQLite em arquivo temporário; Google e Neon não são chamados):
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/
+```
+
+## 🔐 Configuração do Clerk
+
+O passo a passo completo para criar a instância, preparar o primeiro
+administrador, configurar o webhook e publicar na Vercel está em
+[`SETUP_AUTENTICACAO.md`](./SETUP_AUTENTICACAO.md).
+
+1. Em **User & Authentication**, habilite entrada por **e-mail e senha** e
+   exija a verificação de e-mail.
+2. Em **Access mode**, selecione **Invite-only**. Mantenha a capacidade de
+   cadastro por e-mail habilitada, pois ela é usada para concluir convites;
+   esse modo impede cadastros sem convite.
+3. Crie manualmente no Dashboard a conta inicial do administrador. Copie o
+   `user_id` dela para `CLERK_ADMIN_USER_ID`.
+4. No painel de chaves da API, copie a chave pública JWT de verificação para
+   `CLERK_JWT_KEY`. Em **Allowed origins**, inclua exatamente o valor de
+   `APP_URL` para desenvolvimento e produção.
+5. Crie um webhook para `https://seu-dominio/webhooks/clerk`, assine os
+   eventos `user.created`, `user.updated` e `user.deleted`, e salve o segredo
+   em `CLERK_WEBHOOK_SIGNING_SECRET`.
+
+O administrador convida novos integrantes em `/admin/users`. O Clerk envia o
+link para definição de senha; não existe rota de cadastro público. Os perfis
+novos entram como `member`. Membros podem buscar, consultar o histórico e
+exportar leads; apenas o administrador pode gerir usuários ou excluir leads.
 
 ---
 
@@ -126,8 +183,18 @@ No painel do projeto na Vercel: **Settings → Environment Variables**
 |---|---|
 | `GOOGLE_MAPS_API_KEY` | Sua chave do Google Cloud |
 | `DATABASE_URL` | String de conexão do Neon |
+| `APP_ENV` | `production` na Vercel |
+| `APP_URL` | URL publica exata da aplicacao, sem barra final |
+| `SESSION_SECRET_KEY` | Segredo aleatorio para o cookie local |
+| `CLERK_PUBLISHABLE_KEY` | Chave publica do Clerk |
+| `CLERK_FRONTEND_API_URL` | Frontend API URL da instancia Clerk |
+| `CLERK_SECRET_KEY` | Chave secreta do Backend API do Clerk |
+| `CLERK_JWT_KEY` | Chave publica para validar JWTs de sessao |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | Segredo Svix do webhook Clerk |
+| `CLERK_ADMIN_USER_ID` | ID Clerk da conta inicial de administrador |
 
-Após adicionar as variáveis, clique em **Redeploy** para aplicar.
+Rode `alembic upgrade head` com o mesmo `DATABASE_URL` antes do primeiro
+deploy. Após adicionar as variáveis, clique em **Redeploy** para aplicar.
 
 ### 📌 Observações sobre a Vercel
 
@@ -148,10 +215,14 @@ prospector/
 ├── database/
 │   ├── connection.py         # 🔌 Engine e SessionLocal
 │   └── models.py             # 📊 Modelo ORM da tabela businesses
+├── alembic/                  # 🗃️ Migrações do banco, incluindo app_users
 ├── routers/
 │   ├── search.py             # 🔎 POST /search
 │   ├── export.py             # 📥 GET /export
 │   └── history.py            # 📜 GET /historico
+│   ├── auth.py               # 🔐 Login e sessão HTTP-only
+│   ├── users.py              # 👤 Administração de usuários e convites
+│   └── webhooks.py           # 🔗 Sincronização de usuários do Clerk
 ├── services/
 │   ├── places.py             # 🗺️ Nearby Search + Place Details
 │   ├── geocoding.py          # 📍 Cidade/bairro → lat/lng
@@ -176,6 +247,11 @@ prospector/
 | `GET` | `/export` | 📥 Download do XLSX com todos os leads |
 | `GET` | `/export?only_without_website=true` | 📥 Download apenas dos leads sem site |
 | `GET` | `/historico` | 📜 Histórico paginado de leads salvos |
+| `GET` | `/login` | Tela Clerk de entrada |
+| `POST` | `/auth/session` | Troca JWT Clerk por sessão HTTP-only local |
+| `DELETE` | `/auth/session` | Encerra a sessão local |
+| `POST` | `/webhooks/clerk` | Sincroniza perfis recebidos do Clerk |
+| `GET` | `/admin/users` | Gestão de usuários, somente administrador |
 
 ---
 

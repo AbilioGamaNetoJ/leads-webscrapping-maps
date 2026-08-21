@@ -1,17 +1,24 @@
-import httpx
 import os
-from fastapi import APIRouter, Query
+from typing import Annotated
+
+import httpx
 from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, Query
+
+from database.models import AppUser
+from services.auth import get_current_user
 
 load_dotenv()
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
 router = APIRouter()
+CurrentUser = Annotated[AppUser, Depends(get_current_user)]
 
 
 @router.get("/autocomplete")
 async def autocomplete(
+    _: CurrentUser,
     input: str = Query(..., min_length=2),
     kind: str = Query("city"),
     city: str = Query(""),

@@ -63,6 +63,25 @@
           </select>
         </div>
 
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:items-end">
+          <div class="flex flex-col">
+            <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="min_rating">Nota mínima</label>
+            <select id="min_rating" name="min_rating"
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
+              <option value="0" selected>Qualquer nota</option>
+              <option value="3">3.0+</option>
+              <option value="3.5">3.5+</option>
+              <option value="4">4.0+</option>
+              <option value="4.5">4.5+</option>
+            </select>
+          </div>
+          <div class="flex flex-col">
+            <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="min_reviews">Mín. de avaliações</label>
+            <input id="min_reviews" name="min_reviews" type="number" min="0" step="1" placeholder="Ex: 10"
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+          </div>
+        </div>
+
         <!-- Toggle: Only without website -->
         <div class="pt-1">
           <label class="flex items-center justify-between cursor-pointer group">
@@ -157,6 +176,7 @@
               <th class="px-4 py-3 text-left font-medium">Nome</th>
               <th class="px-4 py-3 text-left font-medium">Endereço</th>
               <th class="px-4 py-3 text-left font-medium">Telefone</th>
+              <th class="px-4 py-3 text-center font-medium">Avaliação</th>
               <th class="px-4 py-3 text-center font-medium">Possui Site?</th>
               <th class="px-4 py-3 text-center font-medium">Maps</th>
               <th class="px-4 py-3 text-center font-medium">WhatsApp</th>

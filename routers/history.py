@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Business
+from database.models import AppUser, Business
+from services.auth import get_current_user, require_admin, require_same_origin
 from services.business_types import as_dicts, type_labels
 from services.whatsapp import to_whatsapp_url
 
@@ -15,6 +16,9 @@ router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 templates.env.filters["whatsapp_url"] = to_whatsapp_url
 DbSession = Annotated[Session, Depends(get_db)]
+AdminUser = Annotated[AppUser, Depends(require_admin)]
+CurrentUser = Annotated[AppUser, Depends(get_current_user)]
+SameOrigin = Annotated[None, Depends(require_same_origin)]
 
 
 class DeleteRequest(BaseModel):
@@ -22,7 +26,12 @@ class DeleteRequest(BaseModel):
 
 
 @router.delete("/historico")
-def delete_businesses(payload: DeleteRequest, db: DbSession):
+def delete_businesses(
+    payload: DeleteRequest,
+    db: DbSession,
+    _: AdminUser,
+    __: SameOrigin,
+):
     if not payload.ids:
         raise HTTPException(status_code=400, detail="Nenhum ID informado.")
     deleted = db.query(Business).filter(Business.id.in_(payload.ids)).delete(synchronize_session=False)
@@ -41,6 +50,7 @@ def history(
     business_type: str = "",
     *,
     db: DbSession,
+    current_user: CurrentUser,
 ):
     query = db.query(Business)
 
@@ -77,5 +87,6 @@ def history(
             "business_type": business_type,
             "business_types": as_dicts(),
             "type_labels": type_labels(),
+            "current_user": current_user,
         },
     )

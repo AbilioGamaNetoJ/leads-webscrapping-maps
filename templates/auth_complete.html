@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concluindo acesso — Prospector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#f8f8fa] text-slate-900">
+  <main class="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 flex items-center justify-center">
+    <div class="w-full max-w-[440px] text-center">
+      <img src="/static/Logotipo_login-clerk.svg" alt="Codex Create" class="mx-auto h-24 w-24 object-contain sm:h-28 sm:w-28" />
+      <h1 class="mt-2 text-[26px] font-bold tracking-tight text-slate-950 sm:text-2xl">Prospector</h1>
+      <div id="auth-container" class="mx-auto mt-8 flex min-h-[160px] w-full max-w-[420px] items-center justify-center">
+      <p class="text-sm text-gray-500">Concluindo seu acesso...</p>
+      </div>
+      <p id="auth-error" class="hidden mx-auto mt-4 w-full max-w-[420px] text-sm text-red-700" role="alert"></p>
+    </div>
+  </main>
+
+  {% if clerk_publishable_key and clerk_frontend_api_url %}
+  <script defer crossorigin="anonymous" src="{{ clerk_frontend_api_url }}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}" src="{{ clerk_frontend_api_url }}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+  <script>
+    window.addEventListener('load', async function () {
+      const target = {{ return_to | tojson }};
+      const container = document.getElementById('auth-container');
+      const error = document.getElementById('auth-error');
+      try {
+        if (!window.Clerk) {
+          throw new Error('O SDK do Clerk não foi carregado.');
+        }
+        await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+
+        async function establishSession() {
+          const token = await Clerk.session.getToken();
+          const response = await fetch('/auth/session', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token, Origin: window.location.origin },
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.detail || `Não foi possível liberar este acesso. (${response.status})`);
+          }
+          window.location.assign(target);
+        }
+
+        if (Clerk.isSignedIn) {
+          await establishSession();
+          return;
+        }
+        const hasInvitation = new URLSearchParams(window.location.search).has('__clerk_ticket');
+        if (hasInvitation) {
+          Clerk.mountSignUp(container, { forceRedirectUrl: window.location.href });
+          return;
+        }
+        window.location.assign('/login?return_to=' + encodeURIComponent(target));
+      } catch (exception) {
+        error.textContent = exception.message || 'Não foi possível concluir o acesso.';
+        error.classList.remove('hidden');
+      }
+    });
+  </script>
+  {% else %}
+  <script>
+    document.getElementById('auth-error').textContent = 'A autenticação ainda não foi configurada.';
+    document.getElementById('auth-error').classList.remove('hidden');
+  </script>
+  {% endif %}
+</body>
+</html>

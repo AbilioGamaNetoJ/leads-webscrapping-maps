@@ -71,6 +71,10 @@
 
         try {
           const res = await fetch(`/autocomplete?${params}`);
+          if (res.status === 401) {
+            window.location.assign('/login?return_to=' + encodeURIComponent(window.location.pathname));
+            return;
+          }
           const data = await res.json();
           renderSuggestions(data.suggestions || []);
         } catch {
@@ -330,6 +334,18 @@
     return '<span class="badge-no-site inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Não</span>';
   }
 
+  function buildRatingBadge(rating, total) {
+    if (rating === null || rating === undefined) {
+      return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+    }
+    const reviews = total !== null && total !== undefined ? total : 0;
+    return `<span class="inline-flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-[#c4c3da]">
+      <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.363 1.118l1.287 3.957c.3.921-.755 1.688-1.538 1.118l-3.368-2.447a1 1 0 00-1.176 0l-3.368 2.447c-.783.57-1.838-.197-1.538-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/>
+      </svg>${rating.toFixed(1)} <span class="text-gray-400 dark:text-[#5c5b78]">(${reviews})</span>
+    </span>`;
+  }
+
   function buildMapsLink(url) {
     if (!url) return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
@@ -369,7 +385,8 @@
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function renderResults(data) {
@@ -399,6 +416,7 @@
           <span class="block truncate" title="${escapeHtml(biz.address)}">${escapeHtml(biz.address)}</span>
         </td>
         <td class="cell-phone px-4 py-3 text-gray-600 whitespace-nowrap">${escapeHtml(biz.phone)}${biz.phone && biz.phone !== 'Não informado' ? `<button onclick="copyPhone('${escapeHtml(biz.phone)}')" class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-gray-400 hover:text-brand-600 transition-colors align-middle flex-shrink-0" title="Copiar telefone"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>` : ''}</td>
+        <td class="px-4 py-3 text-center">${buildRatingBadge(biz.rating, biz.user_ratings_total)}</td>
         <td class="px-4 py-3 text-center">${buildWebsiteBadge(biz.has_website)}</td>
         <td class="px-4 py-3 text-center">${buildMapsLink(biz.maps_url)}</td>
         <td class="px-4 py-3 text-center">${buildWhatsAppButton(biz.phone)}</td>
@@ -434,6 +452,8 @@
       quantity: parseInt(document.getElementById('quantity').value, 10),
       only_without_website: document.getElementById('only_without_website').checked,
       neighborhood_place_id: selectedNeighborhoodPlaceId,
+      min_rating: parseFloat(document.getElementById('min_rating').value) || 0,
+      min_reviews: parseInt(document.getElementById('min_reviews').value, 10) || 0,
     };
 
     try {
@@ -442,6 +462,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 401) {
+        window.location.assign('/login?return_to=' + encodeURIComponent(window.location.pathname));
+        return;
+      }
 
       const data = await response.json();
 

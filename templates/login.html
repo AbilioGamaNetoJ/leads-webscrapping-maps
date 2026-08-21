@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar — Prospector Codex Create</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#f8f8fa] text-slate-900">
+  <main class="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 flex items-center justify-center">
+    <div class="w-full max-w-[440px] flex flex-col items-center">
+      <header class="mb-7 text-center sm:mb-8">
+        <img src="/static/Logotipo_login-clerk.svg" alt="Codex Create" class="mx-auto h-24 w-24 object-contain sm:h-28 sm:w-28" />
+        <h1 class="mt-2 text-[26px] font-bold tracking-tight text-slate-950 sm:text-2xl">Prospector</h1>
+        <p class="mt-1 text-sm text-slate-500">Acesse com sua conta da equipe.</p>
+      </header>
+      <div id="clerk-sign-in" class="flex min-h-[420px] w-full max-w-[420px] items-center justify-center"></div>
+      <p id="clerk-error" class="hidden mt-4 w-full max-w-[420px] text-center text-sm text-red-700" role="alert"></p>
+    </div>
+  </main>
+
+  {% if clerk_publishable_key and clerk_frontend_api_url %}
+  <script defer crossorigin="anonymous" src="{{ clerk_frontend_api_url }}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}" src="{{ clerk_frontend_api_url }}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+  <script>
+    window.addEventListener('load', async function () {
+      const error = document.getElementById('clerk-error');
+      try {
+        if (!window.Clerk) {
+          throw new Error('O SDK do Clerk não foi carregado.');
+        }
+        await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+        const completeUrl = '/auth/complete?return_to=' + encodeURIComponent({{ return_to | tojson }});
+        if (Clerk.isSignedIn) {
+          window.location.assign(completeUrl);
+          return;
+        }
+        Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
+          forceRedirectUrl: completeUrl,
+          signUpForceRedirectUrl: completeUrl,
+          signUpUrl: completeUrl,
+          withSignUp: false,
+        });
+      } catch (exception) {
+        console.error('Falha ao inicializar o Clerk:', exception);
+        error.textContent = exception.message || 'Não foi possível carregar a autenticação.';
+        error.classList.remove('hidden');
+      }
+    });
+  </script>
+  {% else %}
+  <script>
+    document.getElementById('clerk-error').textContent = 'A autenticação ainda não foi configurada.';
+    document.getElementById('clerk-error').classList.remove('hidden');
+  </script>
+  {% endif %}
+</body>
+</html>

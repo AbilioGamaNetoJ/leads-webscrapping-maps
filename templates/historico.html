@@ -73,6 +73,7 @@
     {% endif %}
   </form>
 
+  {% if current_user.role == 'admin' %}
   <!-- Selection action bar -->
   <div id="selectionBar" class="hidden items-center justify-between bg-red-50 dark:bg-[#2a1117] border border-red-200 dark:border-[#4a1a25] rounded-xl px-5 py-3">
     <span class="text-sm font-medium text-red-700 dark:text-[#f87171]"><span id="selectionCount">0</span> selecionado(s)</span>
@@ -91,6 +92,7 @@
       </button>
     </div>
   </div>
+  {% endif %}
 
   <!-- Table -->
   {% if businesses %}
@@ -99,10 +101,10 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
           <tr>
-            <th class="px-4 py-3 w-10">
+            {% if current_user.role == 'admin' %}<th class="px-4 py-3 w-10">
               <input type="checkbox" id="selectAll"
                 class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
-            </th>
+            </th>{% endif %}
             <th class="px-4 py-3 text-left font-medium">Nome</th>
             <th class="px-4 py-3 text-left font-medium">Tipo</th>
             <th class="px-4 py-3 text-left font-medium">Endereço</th>
@@ -116,10 +118,10 @@
         <tbody class="divide-y divide-gray-100 dark:divide-[#1d1c2e] text-gray-700 dark:text-[#c4c3da]">
           {% for biz in businesses %}
           <tr class="hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors" data-id="{{ biz.id }}">
-            <td class="px-4 py-3">
+            {% if current_user.role == 'admin' %}<td class="px-4 py-3">
               <input type="checkbox" value="{{ biz.id }}"
                 class="row-checkbox w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
-            </td>
+            </td>{% endif %}
             <td class="px-4 py-3 font-medium text-gray-800 dark:text-[#f0eff8]">{{ biz.name }}</td>
             <td class="px-4 py-3 text-gray-500 dark:text-[#a09fc0]">{{ type_labels.get(biz.business_type, biz.business_type or 'Não informado') }}</td>
             <td class="px-4 py-3 text-gray-500 dark:text-[#a09fc0] max-w-xs">
@@ -222,6 +224,7 @@
 
 </div>
 
+{% if current_user.role == 'admin' %}
 <script>
 (function () {
   const selectionBar = document.getElementById('selectionBar');
@@ -298,4 +301,5 @@
   });
 })();
 </script>
+{% endif %}
 {% endblock %}

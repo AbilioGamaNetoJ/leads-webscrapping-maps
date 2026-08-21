@@ -2,7 +2,12 @@ fastapi==0.111.0
 uvicorn==0.29.0
 sqlalchemy==2.0.30
 psycopg2-binary==2.9.9
-httpx==0.27.0
+httpx==0.28.1
 openpyxl==3.1.2
 python-dotenv==1.0.1
 jinja2==3.1.4
+itsdangerous==2.2.0
+alembic==1.19.1
+clerk-backend-api==7.0.0
+svix==2.0.0
+email-validator==2.3.0

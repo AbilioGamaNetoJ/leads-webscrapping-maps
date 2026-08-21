@@ -4,22 +4,27 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | {DATE} |
+| **Last updated** | 2026-08-21 |
 
-## Current Version: {VERSION}
+## Current Version: Internal access control
 
 <!-- CUSTOMIZE: Features in the current version -->
 
 | # | Feature | Status | Effort |
 |---|---|---|---|
-| 1 | {FEATURE_1} | {STATUS} | {S/M/L} |
-| 2 | {FEATURE_2} | {STATUS} | {S/M/L} |
+| 1 | Autenticação Clerk, sessão local e autorização por papel | Done | L |
+| 2 | Convites e gestão de usuários pelo administrador | Done | M |
 
 ## Recent Changes
 
 | Date | Feature | Status |
 |---|---|---|
 | 2026-08-20 | Catálogo de 92 nichos comerciais para Tipo de Negócio | Done |
+| 2026-08-21 | Login fechado, papéis e gestão de usuários com Clerk e Neon | Done |
+| 2026-08-21 | Ajuste visual da tela de login e logo dedicado | Done |
+| 2026-08-21 | Migrações legadas compatíveis com Neon vazio ou já inicializado | Done |
+| 2026-08-21 | Normalização da resposta de convites do Clerk | Done |
+| 2026-08-21 | Sincronização do nome e e-mail do Clerk no primeiro login | Done |
 
 ## Upcoming Versions
 

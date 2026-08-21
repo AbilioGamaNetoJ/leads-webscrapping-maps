@@ -113,7 +113,24 @@
                     {% if request.url.path == '/historico' %}bg-brand-800 text-white{% endif %}">
             Histórico
           </a>
+          {% if current_user and current_user.role == 'admin' %}
+          <a href="/admin/users"
+             class="min-h-[44px] px-4 py-2.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap flex items-center
+                    {% if request.url.path == '/admin/users' %}bg-brand-800 text-white{% endif %}">
+            Usuários
+          </a>
+          {% endif %}
         </nav>
+        {% if current_user %}
+        <div class="hidden lg:block border-l border-brand-700 pl-3 ml-1 text-right leading-tight">
+          <span class="block text-xs text-white max-w-32 truncate">{{ current_user.full_name or current_user.email or 'Usuário' }}</span>
+          <span class="block text-[11px] text-brand-300">{{ 'Administrador' if current_user.role == 'admin' else 'Equipe' }}</span>
+        </div>
+        <a href="/logout"
+          class="min-h-[44px] px-3 py-2.5 rounded-lg text-sm font-medium text-brand-200 hover:text-white hover:bg-brand-800 transition-colors whitespace-nowrap flex items-center">
+          Sair
+        </a>
+        {% endif %}
         <button id="themeToggle" type="button"
           class="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-brand-200 hover:text-white hover:bg-brand-800 transition-colors theme-toggle"
           aria-label="Alternar modo escuro">

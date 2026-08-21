@@ -1,15 +1,25 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+
 from database.connection import get_db
-from database.models import Business
+from database.models import AppUser, Business
+from services.auth import get_current_user
 from services.xlsx_generator import generate_xlsx
 
 router = APIRouter()
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[AppUser, Depends(get_current_user)]
 
 
 @router.get("/export")
-def export(only_without_website: bool = False, db: Session = Depends(get_db)):
+def export(
+    db: DbSession,
+    _: CurrentUser,
+    only_without_website: bool = False,
+):
     query = db.query(Business)
     if only_without_website:
         query = query.filter(Business.has_website == False)

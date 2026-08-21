@@ -11,9 +11,9 @@
 
 | Field | Value |
 |---|---|
-| **Last session** | {DATETIME} |
-| **Last agent** | {AGENT_NAME} |
-| **Current branch** | {BRANCH} |
+| **Last session** | 2026-08-21 |
+| **Last agent** | Codex |
+| **Current branch** | Current worktree |
 
 ---
 
@@ -29,6 +29,12 @@
 | 2026-08-20 | Tipo de negócio virou combobox filtrável no cliente | Reutiliza o padrão de autocomplete de cidade/bairro e o catálogo de `includedType` da Places API | Usuário busca por nome em PT-BR; o valor enviado continua sendo o type da API |
 | 2026-08-20 | Nichos comerciais usam catálogo interno e consultas textuais | A maioria não é um `includedType` aceito pela Places API | Os 92 nichos e 387 termos ficam disponíveis sem causar requisições inválidas; o tipo fica salvo no lead |
 | 2026-08-20 | Botão WhatsApp nas listas de busca e histórico | O telefone internacional do Maps vira `https://wa.me/{dígitos}` | Contato direto com o lead sem copiar o número |
+| 2026-08-21 | Clerk e a fonte de identidade; Neon guarda perfil e autorização | Evita uma segunda stack ORM e permite desativação imediata consultando `app_users` a cada requisição | Login fechado por convite; papéis `admin` e `member` no banco |
+| 2026-08-21 | Sessão Clerk é trocada por cookie local HTTP-only | Protege navegações Jinja e APIs com o mesmo fluxo, sem expor segredos ao navegador | Páginas anônimas redirecionam para `/login`; APIs retornam 401 |
+| 2026-08-21 | Login usa logo escuro dedicado e contêiner responsivo | Evita baixo contraste no fundo claro e mantém o Clerk centralizado em mobile e desktop | SVG servido em `/static/Logotipo_login-clerk.svg`; falhas do SDK aparecem na tela |
+| 2026-08-21 | Migrações do legado `businesses` são idempotentes | Um Neon novo não tinha a tabela criada pela revisão-base e a aplicação pode iniciar antes do Alembic | A revisão-base cria a tabela somente quando ausente; a revisão de ratings verifica colunas antes de adicioná-las |
+| 2026-08-21 | Resposta de convites do Clerk é normalizada | O Backend API retornou uma lista JSON em `GET /v1/invitations`, enquanto o código esperava sempre um envelope `data` | A tela administrativa aceita lista direta e envelope paginado |
+| 2026-08-21 | Perfil é enriquecido no primeiro login | O JWT de sessão pode conter apenas o identificador; o usuário aparecia como `user_...` até o webhook chegar | `POST /auth/session` consulta o usuário no Clerk e grava nome, e-mail e imagem; falhas de enriquecimento não bloqueiam o login |
 
 ---
 
@@ -41,7 +47,7 @@
 
 | # | Blocker | Severity | Details |
 |---|---|---|---|
-| 1 | {BLOCKER} | Critical / High / Medium | {DETAILS} |
+| Nenhum | - | - | Configurar credenciais Clerk e aplicar Alembic antes do primeiro deploy autenticado |
 
 ---
 
@@ -54,6 +60,10 @@
 | Date | Lesson | Context |
 |---|---|---|
 | {DATE} | {LESSON} | {CONTEXT} |
+| 2026-08-21 | A tabela `businesses` já existia sem Alembic | A revisão `20260821_00` é uma baseline sem DDL; `20260821_01` cria apenas `app_users` |
+| 2026-08-21 | A baseline precisa cobrir banco Neon vazio | A revisão de ratings falhava com `no such table: businesses` quando o Alembic era executado antes do primeiro start | A baseline passou a criar a tabela apenas quando ela não existe |
+| 2026-08-21 | APIs externas podem variar o envelope da coleção | `/admin/users` falhava em `.get()` ao receber a lista direta do Clerk | O adaptador `list_pending_invitations` filtra e normaliza os dois formatos |
+| 2026-08-21 | JWT não é fonte suficiente para o perfil visual | O token usado na sessão identifica o usuário, mas não garante `first_name` e e-mail | O Backend API do Clerk é consultado no login; o webhook continua sincronizando alterações posteriores |
 
 ---
 
@@ -66,7 +76,7 @@
 
 | # | Task | Status | Started |
 |---|---|---|---|
-| 1 | {TASK} | {STATUS} | {DATE} |
+| 1 | Autenticação Clerk e gestão de usuários | Concluída | 2026-08-21 |
 | 2 | Expansão do catálogo de tipos de negócio | Concluída | 2026-08-20 |
 
 ---

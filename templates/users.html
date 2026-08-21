@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Usuários — Prospector Codex Create{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-xl font-bold text-gray-800 dark:text-white">Usuários</h1>
+    <p class="mt-0.5 text-sm text-gray-500 dark:text-[#a09fc0]">Convide pessoas da equipe e controle o acesso ao Prospector.</p>
+  </div>
+
+  {% if notice %}
+  <div class="border border-green-200 bg-green-50 text-green-800 px-4 py-3 text-sm rounded-lg" role="status">{{ notice }}</div>
+  {% endif %}
+
+  <section class="bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-sm p-5">
+    <h2 class="text-base font-semibold text-gray-800 dark:text-white">Convidar pessoa</h2>
+    <form action="/admin/users/invitations" method="post" class="mt-4 flex flex-col sm:flex-row gap-3">
+      <label class="sr-only" for="email">E-mail</label>
+      <input id="email" name="email" type="email" required placeholder="nome@empresa.com"
+        class="flex-1 min-h-[44px] rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600" />
+      <button type="submit" class="min-h-[44px] bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-5 text-sm font-medium transition-colors">Enviar convite</button>
+    </form>
+  </section>
+
+  <section class="bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-[#252340]"><h2 class="text-base font-semibold text-gray-800 dark:text-white">Acessos ativos e bloqueados</h2></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
+          <tr><th class="text-left px-5 py-3 font-medium">Pessoa</th><th class="text-left px-5 py-3 font-medium">Papel</th><th class="text-left px-5 py-3 font-medium">Status</th><th class="text-right px-5 py-3 font-medium">Ação</th></tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-[#1d1c2e] text-gray-700 dark:text-[#c4c3da]">
+          {% for user in users %}
+          <tr>
+            <td class="px-5 py-3"><span class="block font-medium text-gray-800 dark:text-white">{{ user.full_name or user.email or user.clerk_user_id }}</span><span class="block text-xs text-gray-500">{{ user.email or 'E-mail aguardando sincronização' }}</span></td>
+            <td class="px-5 py-3">{{ 'Administrador' if user.role == 'admin' else 'Equipe' }}</td>
+            <td class="px-5 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 text-green-700 dark:bg-[#0d2e1e] dark:text-green-300' if user.is_active else 'bg-red-100 text-red-700 dark:bg-[#2a1117] dark:text-red-300' }}">{{ 'Ativo' if user.is_active else 'Desativado' }}</span></td>
+            <td class="px-5 py-3 text-right">
+              {% if user.clerk_user_id != current_user.clerk_user_id %}
+              <form action="/admin/users/{{ user.clerk_user_id }}/status" method="post" class="inline">
+                <input type="hidden" name="is_active" value="{{ 'false' if user.is_active else 'true' }}" />
+                <button type="submit" class="min-h-[36px] px-3 rounded-lg text-sm font-medium {{ 'text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-[#2a1117]' if user.is_active else 'text-green-700 hover:bg-green-50 dark:text-green-300 dark:hover:bg-[#0d2e1e]' }}">{{ 'Desativar' if user.is_active else 'Reativar' }}</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="px-5 py-8 text-center text-gray-500">Nenhum usuário sincronizado ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-[#252340]"><h2 class="text-base font-semibold text-gray-800 dark:text-white">Convites pendentes</h2></div>
+    {% if invitation_error %}<p class="px-5 py-4 text-sm text-red-700 dark:text-red-300">{{ invitation_error }}</p>{% endif %}
+    <div class="divide-y divide-gray-100 dark:divide-[#1d1c2e]">
+      {% for invitation in pending_invitations %}
+      <div class="px-5 py-3 flex items-center justify-between gap-4"><span class="text-sm text-gray-700 dark:text-[#c4c3da]">{{ invitation.email_address }}</span><form action="/admin/invitations/{{ invitation.id }}/revoke" method="post"><button type="submit" class="min-h-[36px] px-3 text-sm text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-[#2a1117] rounded-lg">Revogar</button></form></div>
+      {% else %}
+      <p class="px-5 py-5 text-sm text-gray-500">Não há convites pendentes.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

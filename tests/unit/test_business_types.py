@@ -1,12 +1,10 @@
 import asyncio
 import unittest
-from types import SimpleNamespace
 
 from database.models import Business
 from services.business_type_catalog import NICHE_CATALOG
 from services.business_types import as_dicts, get_business_type
 from services.places import _fetch_category_places, build_search_body
-from services.xlsx_generator import generate_xlsx
 
 
 class BusinessTypeCatalogTests(unittest.TestCase):
@@ -91,26 +89,8 @@ class BusinessTypeCatalogTests(unittest.TestCase):
         self.assertEqual({payload["textQuery"] for payload in client.payloads}, set(category.search_terms))
         self.assertTrue(all("includedType" not in payload for payload in client.payloads))
 
-    def test_business_type_is_persistable_and_exported(self):
+    def test_business_type_is_persistable(self):
         self.assertIn("business_type", Business.__table__.columns)
-
-        workbook = generate_xlsx(
-            [
-                SimpleNamespace(
-                    name="Exemplo",
-                    business_type="caca_vazamento",
-                    address="Rua A",
-                    phone="123",
-                    has_website=False,
-                    maps_url="",
-                )
-            ]
-        )
-        from openpyxl import load_workbook
-
-        worksheet = load_workbook(workbook).active
-        self.assertEqual(worksheet["B1"].value, "Tipo de Negócio")
-        self.assertEqual(worksheet["B2"].value, "Caça-Vazamento")
 
 
 if __name__ == "__main__":

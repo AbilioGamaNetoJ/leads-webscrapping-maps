@@ -15,7 +15,10 @@ load_dotenv()
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 PLACES_API_BASE = "https://places.googleapis.com/v1"
-SEARCH_FIELD_MASK = "places.id,places.displayName,places.formattedAddress,nextPageToken"
+SEARCH_FIELD_MASK = (
+    "places.id,places.displayName,places.formattedAddress,"
+    "places.rating,places.userRatingCount,nextPageToken"
+)
 
 
 def _circle_to_rectangle(lat: float, lng: float, radius_m: float) -> dict:
@@ -149,6 +152,8 @@ async def search_businesses(
     quantity: int,
     only_without_website: bool,
     neighborhood_place_id: str = "",
+    min_rating: float = 0,
+    min_reviews: int = 0,
 ) -> dict:
     category = get_business_type(business_type)
     if not category:
@@ -165,6 +170,11 @@ async def search_businesses(
             rectangle,
             quantity,
         )
+
+        if min_rating > 0:
+            collected_places = [p for p in collected_places if (p.get("rating") or 0) >= min_rating]
+        if min_reviews > 0:
+            collected_places = [p for p in collected_places if (p.get("userRatingCount") or 0) >= min_reviews]
 
         new_places = []
         skipped_duplicates = 0
@@ -209,6 +219,8 @@ async def search_businesses(
             phone=details.get("internationalPhoneNumber") or "Não informado",
             maps_url=details.get("googleMapsUri") or "",
             has_website=has_website,
+            rating=place.get("rating"),
+            user_ratings_total=place.get("userRatingCount"),
             business_type=category.value,
         )
         db.add(business)
@@ -223,6 +235,8 @@ async def search_businesses(
                 "phone": business.phone,
                 "maps_url": business.maps_url,
                 "has_website": has_website,
+                "rating": business.rating,
+                "user_ratings_total": business.user_ratings_total,
             }
         )
 
