@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-08-21 |
+| **Last updated** | 2026-08-24 |
 
 ## Current Version: Internal access control
 
@@ -19,6 +19,9 @@
 
 | Date | Feature | Status |
 |---|---|---|
+| 2026-08-24 | Redesign mobile-first: barra de navegação inferior, folha de perfil, cards no mobile / tabela no desktop | Done |
+| 2026-08-24 | PWA instalável (manifest, ícones, service worker, página offline) | Done |
+| 2026-08-24 | Tailwind compilado (`static/app.css`) no lugar do CDN de desenvolvimento | Done |
 | 2026-08-20 | Catálogo de 92 nichos comerciais para Tipo de Negócio | Done |
 | 2026-08-21 | Login fechado, papéis e gestão de usuários com Clerk e Neon | Done |
 | 2026-08-21 | Ajuste visual da tela de login e logo dedicado | Done |

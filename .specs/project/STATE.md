@@ -11,9 +11,9 @@
 
 | Field | Value |
 |---|---|
-| **Last session** | 2026-08-21 |
-| **Last agent** | Codex |
-| **Current branch** | Current worktree |
+| **Last session** | 2026-08-24 |
+| **Last agent** | Claude Code |
+| **Current branch** | main |
 
 ---
 
@@ -39,6 +39,11 @@
 | 2026-08-24 | Cada termo do plano é esgotado dentro do lote | Mantém o cursor como um simples índice, sem trafegar `pageToken` do Google pelo navegador | A onda é dimensionada por `remaining / PAGE_SIZE`: larga o bastante para misturar nichos, estreita o bastante para não pagar por resultados descartados (~4% de desperdício medido) |
 | 2026-08-24 | Modo "Todos os tipos" faz fan-out completo do catálogo | Decisão do usuário: cobertura máxima, já que é a única forma de volumes altos serem alcançáveis | 566 consultas textuais distintas (após deduplicar termos repetidos entre nichos); é a opção mais cara em chamadas à Places API |
 | 2026-08-24 | Ordem das categorias no modo "todos" é embaralhada com semente fixa | O catálogo é agrupado por tema, então a ordem natural encheria o primeiro lote só de restaurantes | Determinismo é requisito do cursor; 5 nichos distintos já nas 14 primeiras linhas |
+| 2026-08-24 | Redesign mobile-first com barra de navegação inferior + folha de perfil | Layout original era desktop-first (tabelas largas, cabeçalho com todos os controles); a referência pedida usa navegação inferior com item ativo elevado, padrão de app nativo | Cabeçalho de topo e sidebar de filtros viram `lg:`-only; mobile ganha `_bottom_nav.html` + `_profile_sheet.html` incluídos por `base.html` |
+| 2026-08-24 | Tailwind compilado com o CLI (`static/app.css`) no lugar do `cdn.tailwindcss.com` | O CDN é o compilador de desenvolvimento (JIT no navegador, ~400KB, sem cache offline garantido); um PWA precisa de CSS estático para o service worker pré-cachear | `package.json`/`tailwind.config.js` novos na raiz; `npm run css` gera o arquivo comitado, `content` escaneia `templates/**` e `static/**/*.js` (classes montadas em template string no `app.js`) |
+| 2026-08-24 | Service worker nunca cacheia `/search`, `/historico`, `/export`, `/admin`, `/auth`, `/login`, `/autocomplete` | O banco de leads é compartilhado entre a equipe; uma resposta cacheada no disco do aparelho vazaria dados de um usuário para o próximo que abrir o app naquele dispositivo | `static/sw.js` deixa esses prefixos passarem direto pra rede sem tocar no Cache Storage; só o shell estático (CSS/JS/ícones) e `/offline` são pré-cacheados |
+| 2026-08-24 | `/sw.js` é servido pela raiz da aplicação (rota em `main.py`), não por `/static/sw.js` | O escopo de um service worker é limitado ao diretório onde o arquivo é servido; em `/static/` ele não controlaria navegações em `/`, `/historico` etc. | Rota dedicada com `FileResponse` e `Cache-Control: no-cache`; mesma razão para `/manifest.webmanifest` fora de `/static` (o `StaticFiles` não reconhece a extensão e serviria o content-type errado) |
+| 2026-08-24 | Ícone do PWA é só o símbolo (chevron), sem o "C" interligado nem o wordmark | O logo fonte (`logotipo-fundo-dark.png`) é um lockup 4000×4000 com muito espaço vazio; testado no ícone de 48–192px, chevron sozinho é o que continua legível | Gerado via `sharp`: recorte da região do símbolo, máscara por cor (mantém só os tons de roxo, remove pixels brancos do "C"/texto), `trim`, padding quadrado e composição sobre fundo `#1E0E3A` |
 
 ---
 

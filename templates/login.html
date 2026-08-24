@@ -2,9 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Entrar — Prospector Codex Create</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#3B1F73" />
+  <link rel="icon" href="/static/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon-180.png" />
+  <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body class="min-h-screen bg-[#f8f8fa] text-slate-900">
   <main class="min-h-screen w-full px-4 py-8 sm:px-6 sm:py-12 flex items-center justify-center">
@@ -14,7 +18,7 @@
         <h1 class="mt-2 text-[26px] font-bold tracking-tight text-slate-950 sm:text-2xl">Prospector</h1>
         <p class="mt-1 text-sm text-slate-500">Acesse com sua conta da equipe.</p>
       </header>
-      <div id="clerk-sign-in" class="flex min-h-[420px] w-full max-w-[420px] items-center justify-center"></div>
+      <div id="clerk-sign-in" class="flex min-h-[360px] sm:min-h-[420px] w-full max-w-[420px] items-center justify-center"></div>
       <p id="clerk-error" class="hidden mt-4 w-full max-w-[420px] text-center text-sm text-red-700" role="alert"></p>
     </div>
   </main>
@@ -54,5 +58,6 @@
     document.getElementById('clerk-error').classList.remove('hidden');
   </script>
   {% endif %}
+  <script src="/static/pwa.js"></script>
 </body>
 </html>

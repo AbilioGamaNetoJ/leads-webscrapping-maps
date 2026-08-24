@@ -17,6 +17,7 @@ prospector/.venv/
 prospector/__pycache__/
 .pytest_cache/
 htmlcov/
+node_modules/
 
 # MCP
 .mcp.json

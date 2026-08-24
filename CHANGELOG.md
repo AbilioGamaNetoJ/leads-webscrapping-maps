@@ -9,6 +9,22 @@ e o versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- Redesign mobile-first com barra de navegação inferior (Buscar · Histórico · Exportar ·
+  Usuários para admin · Perfil), no padrão de app nativo: ícone ativo elevado num círculo
+  sobre a barra. O cabeçalho de topo com a navegação horizontal e o menu de usuário passam
+  a aparecer só a partir de `lg`.
+- Folha de perfil (`_profile_sheet.html`), aberta pelo item **Perfil** da barra inferior:
+  conta atual, alternar tema claro/escuro, **Instalar app** e **Sair** — tira esses
+  controles do cabeçalho no mobile.
+- Listas de leads (busca e histórico) e a tabela de usuários agora mostram **cards** abaixo
+  de `md`, com botões grandes de Maps/WhatsApp/copiar telefone; a tabela original continua
+  no desktop. Formulários de busca e de filtros do histórico viram seções colapsáveis no
+  mobile, com um resumo dos filtros ativos quando fechados.
+- Prospector agora é um **PWA instalável** em Android, iOS e desktop: `manifest.webmanifest`,
+  ícones gerados a partir do símbolo da marca (192, 512, maskable-512, apple-touch-icon) e
+  um service worker (`static/sw.js`) com shell estático pré-cacheado e página `/offline` de
+  fallback. Botão **Instalar app** usa `beforeinstallprompt` no Android/desktop e mostra o
+  passo a passo de "Adicionar à Tela de Início" no Safari iOS (que não dispara esse evento).
 - Opção **Todos os tipos** no campo Tipo de Negócio, agora o padrão do formulário.
   Monta um plano com os termos de todas as 140 categorias, embaralhados com semente
   fixa e intercalados, para que os primeiros resultados já venham de nichos variados.
@@ -23,6 +39,13 @@ e o versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- Tailwind deixou de ser carregado via `cdn.tailwindcss.com` (compilador de desenvolvimento
+  rodando no navegador, ~400KB, sem cache confiável offline). Agora é compilado com o
+  Tailwind CLI para `static/app.css` (~30KB minificado) e comitado — `npm run css` depois de
+  qualquer classe nova; `npm run css:watch` durante o desenvolvimento.
+- Campos de formulário (busca, filtros do histórico, convite de usuário) passam a
+  `text-base` abaixo de `md`, voltando a `text-sm` no desktop — abaixo de 16px o iOS dá
+  zoom automático ao focar um input.
 - Teto de resultados por busca de 100 para **1000**.
 - Combobox de tipo de negócio: filtra a cada tecla (sem o debounce de 80ms, que era
   inútil num filtro local) e mostra todas as opções correspondentes em vez de apenas 8.

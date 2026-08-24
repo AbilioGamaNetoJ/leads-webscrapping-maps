@@ -10,9 +10,9 @@
       <h1 class="text-xl font-bold text-gray-800 dark:text-white">Histórico de Leads</h1>
       <p class="text-sm text-gray-500 dark:text-[#a09fc0] mt-0.5">{{ total }} negócio{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <a href="/export" target="_blank"
-        class="flex items-center gap-2 border border-gray-300 dark:border-[#252340] text-gray-700 dark:text-[#9897b3] hover:bg-gray-50 dark:hover:bg-[#1d1c2e]
+        class="flex-1 min-w-[150px] sm:flex-none flex items-center justify-center gap-2 min-h-[44px] border border-gray-300 dark:border-[#252340] text-gray-700 dark:text-[#9897b3] hover:bg-gray-50 dark:hover:bg-[#1d1c2e]
                 font-medium py-2 px-4 rounded-lg transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -21,7 +21,7 @@
         Exportar XLSX
       </a>
       <a href="/export?only_without_website=true" target="_blank"
-        class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white
+        class="flex-1 min-w-[150px] sm:flex-none flex items-center justify-center gap-2 min-h-[44px] bg-green-600 hover:bg-green-700 text-white
                font-medium py-2 px-4 rounded-lg transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -32,50 +32,71 @@
     </div>
   </div>
 
-  <!-- Filters -->
-  <form method="get" action="/historico"
-    class="bg-white dark:bg-[#17162a] rounded-xl border border-gray-200 dark:border-[#252340] shadow-sm px-5 py-4 flex flex-wrap gap-3 items-end">
-    <div class="flex-1 min-w-[180px]">
-      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Buscar por nome</label>
-      <input type="text" name="name" value="{{ name }}" placeholder="Digite o nome..."
-        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none
-               focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
-    </div>
-    <div class="min-w-[160px]">
-      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Possui site?</label>
-      <select name="has_website"
-        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm bg-white focus:outline-none
-               focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
-        <option value="" {% if not has_website %}selected{% endif %}>Todos</option>
-        <option value="true" {% if has_website == 'true' %}selected{% endif %}>Sim</option>
-        <option value="false" {% if has_website == 'false' %}selected{% endif %}>Não</option>
-      </select>
-    </div>
-    <div class="min-w-[180px]">
-      <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Tipo de negócio</label>
-      <select name="business_type"
-        class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
-        <option value="" {% if not business_type %}selected{% endif %}>Todos</option>
-        {% for item in business_types %}
-        <option value="{{ item.value }}" {% if business_type == item.value %}selected{% endif %}>{{ item.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit"
-      class="bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm">
-      Filtrar
+  <!-- Filters (colapsável no mobile; some direto quando algum filtro já está ativo) -->
+  {% set filters_active = name or has_website or business_type %}
+  <div class="bg-white dark:bg-[#17162a] rounded-xl border border-gray-200 dark:border-[#252340] shadow-sm transition-colors">
+    <button type="button" id="historyFiltersToggle" aria-expanded="{{ 'false' if filters_active else 'true' }}" aria-controls="historyFiltersWrap"
+      class="lg:hidden w-full flex items-center justify-between px-5 py-4 min-h-[44px]">
+      <span class="text-sm font-semibold text-gray-700 dark:text-[#c4c3da] flex items-center gap-2">
+        <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+        </svg>
+        Filtros
+        {% if filters_active %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 dark:bg-[#251f45] text-brand-700 dark:text-brand-300">ativos</span>{% endif %}
+      </span>
+      <svg id="historyFiltersChevron" class="w-5 h-5 text-gray-400 transition-transform {{ '' if filters_active else 'rotate-180' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
     </button>
-    {% if name or has_website or business_type %}
-    <a href="/historico"
-      class="text-sm text-gray-500 dark:text-[#5c5b78] hover:text-gray-700 dark:hover:text-[#9897b3] py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1d1c2e] transition-colors">
-      Limpar
-    </a>
-    {% endif %}
-  </form>
+    <div id="historyFiltersWrap" class="{{ 'hidden' if filters_active else '' }} lg:block px-5 pb-5 lg:pt-5">
+      <form method="get" action="/historico" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Buscar por nome</label>
+          <input type="text" name="name" value="{{ name }}" placeholder="Digite o nome..."
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none
+                   focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+        </div>
+        <div class="min-w-[160px]">
+          <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Possui site?</label>
+          <select name="has_website"
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2.5 md:py-2 text-base md:text-sm bg-white focus:outline-none
+                   focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
+            <option value="" {% if not has_website %}selected{% endif %}>Todos</option>
+            <option value="true" {% if has_website == 'true' %}selected{% endif %}>Sim</option>
+            <option value="false" {% if has_website == 'false' %}selected{% endif %}>Não</option>
+          </select>
+        </div>
+        <div class="min-w-[180px]">
+          <label class="block text-xs font-medium text-gray-600 dark:text-[#a09fc0] mb-1">Tipo de negócio</label>
+          <select name="business_type"
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2.5 md:py-2 text-base md:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition">
+            <option value="" {% if not business_type %}selected{% endif %}>Todos</option>
+            {% for item in business_types %}
+            <option value="{{ item.value }}" {% if business_type == item.value %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit"
+          class="min-h-[44px] bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm">
+          Filtrar
+        </button>
+        {% if filters_active %}
+        <a href="/historico"
+          class="min-h-[44px] flex items-center text-sm text-gray-500 dark:text-[#5c5b78] hover:text-gray-700 dark:hover:text-[#9897b3] py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1d1c2e] transition-colors">
+          Limpar
+        </a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
 
   {% if current_user.role == 'admin' %}
-  <!-- Selection action bar -->
-  <div id="selectionBar" class="hidden items-center justify-between bg-red-50 dark:bg-[#2a1117] border border-red-200 dark:border-[#4a1a25] rounded-xl px-5 py-3">
+  <!-- Selection action bar: fixa acima da barra inferior no mobile, em fluxo normal no desktop -->
+  <div id="selectionBar"
+    class="hidden items-center justify-between bg-red-50 dark:bg-[#2a1117] border border-red-200 dark:border-[#4a1a25] rounded-xl px-5 py-3
+           fixed inset-x-4 z-30 shadow-lg lg:static lg:inset-auto lg:shadow-none lg:z-auto"
+    style="bottom: calc(4.75rem + env(safe-area-inset-bottom));"
     <span class="text-sm font-medium text-red-700 dark:text-[#f87171]"><span id="selectionCount">0</span> selecionado(s)</span>
     <div class="flex gap-2">
       <button id="clearSelectionBtn" type="button"
@@ -94,10 +115,75 @@
   </div>
   {% endif %}
 
-  <!-- Table -->
+  <!-- Lista -->
   {% if businesses %}
   <div class="bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
+
+    <!-- Mobile: cards -->
+    <div class="md:hidden divide-y divide-gray-100 dark:divide-[#1d1c2e]">
+      {% for biz in businesses %}
+      <div class="p-4 space-y-3" data-id="{{ biz.id }}">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start gap-2.5 min-w-0 flex-1">
+            {% if current_user.role == 'admin' %}
+            <input type="checkbox" value="{{ biz.id }}"
+              class="row-checkbox mt-1 w-5 h-5 flex-shrink-0 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer" />
+            {% endif %}
+            <div class="min-w-0">
+              <p class="font-medium text-gray-800 dark:text-[#f0eff8] truncate">{{ biz.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-[#a09fc0] mt-0.5">{{ type_labels.get(biz.business_type, biz.business_type or 'Não informado') }}</p>
+            </div>
+          </div>
+          {% if biz.has_website %}
+            <span class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-[#252340] text-gray-600 dark:text-[#9897b3]">Sim</span>
+          {% else %}
+            <span class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-[#0d2e1e] text-green-700 dark:text-[#4ade80]">Não</span>
+          {% endif %}
+        </div>
+
+        <p class="text-sm text-gray-500 dark:text-[#a09fc0] line-clamp-2">{{ biz.address or 'Não informado' }}</p>
+
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm text-gray-600 dark:text-[#c4c3da] truncate">{% if biz.phone and biz.phone != 'Não informado' %}{{ biz.phone }}{% else %}Não informado{% endif %}</span>
+          <span class="text-xs text-gray-400 dark:text-[#8c8ba8] whitespace-nowrap">{{ biz.created_at.strftime('%d/%m/%Y') if biz.created_at else '—' }}</span>
+        </div>
+
+        {% set wa_url = biz.phone | whatsapp_url %}
+        {% if biz.maps_url or wa_url or (biz.phone and biz.phone != 'Não informado') %}
+        <div class="flex items-stretch gap-2 pt-1">
+          {% if biz.maps_url %}
+          <a href="{{ biz.maps_url }}" target="_blank" rel="noopener noreferrer"
+            class="flex-1 min-w-[100px] inline-flex items-center justify-center gap-1.5 text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-[#1d1740] hover:bg-brand-100 dark:hover:bg-[#252340] font-medium text-sm px-3 py-2.5 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            Maps
+          </a>
+          {% endif %}
+          {% if wa_url %}
+          <a href="{{ wa_url }}" target="_blank" rel="noopener noreferrer"
+            class="flex-1 min-w-[100px] inline-flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2.5 rounded-lg transition-colors">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Mensagem
+          </a>
+          {% endif %}
+          {% if biz.phone and biz.phone != 'Não informado' %}
+          <button type="button" onclick="copyPhone('{{ biz.phone|e }}')" title="Copiar telefone"
+            class="flex-shrink-0 w-11 flex items-center justify-center rounded-lg border border-gray-200 dark:border-[#252340] text-gray-500 dark:text-[#8c8ba8] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop: tabela -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
           <tr>
@@ -178,18 +264,18 @@
 
     <!-- Pagination -->
     {% if total_pages > 1 %}
-    <div class="px-5 py-4 border-t border-gray-100 dark:border-[#1d1c2e] flex items-center justify-between text-sm text-gray-600 dark:text-[#c4c3da]">
-      <span>Página {{ page }} de {{ total_pages }}</span>
-      <div class="flex gap-2">
+    <div class="px-5 py-4 border-t border-gray-100 dark:border-[#1d1c2e] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600 dark:text-[#c4c3da]">
+      <span class="text-center sm:text-left">Página {{ page }} de {{ total_pages }}</span>
+      <div class="flex gap-2 w-full sm:w-auto">
         {% if page > 1 %}
         <a href="/historico?page={{ page - 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
-          class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+          class="flex-1 sm:flex-none min-h-[44px] flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
           ← Anterior
         </a>
         {% endif %}
         {% if page < total_pages %}
         <a href="/historico?page={{ page + 1 }}&name={{ name }}&has_website={{ has_website }}&business_type={{ business_type }}"
-          class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+          class="flex-1 sm:flex-none min-h-[44px] flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#252340] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
           Próxima →
         </a>
         {% endif %}
@@ -224,6 +310,23 @@
 
 </div>
 
+<script>
+// Filtros colapsáveis (mobile) — no desktop `lg:block` mantém o formulário sempre visível.
+(function () {
+  const toggle = document.getElementById('historyFiltersToggle');
+  const wrap = document.getElementById('historyFiltersWrap');
+  const chevron = document.getElementById('historyFiltersChevron');
+  if (!toggle || !wrap) return;
+
+  toggle.addEventListener('click', function () {
+    const open = wrap.classList.contains('hidden');
+    wrap.classList.toggle('hidden', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+    if (chevron) chevron.classList.toggle('rotate-180', !open);
+  });
+})();
+</script>
+
 {% if current_user.role == 'admin' %}
 <script>
 (function () {
@@ -233,8 +336,25 @@
   const deleteBtn = document.getElementById('deleteSelectedBtn');
   const clearBtn = document.getElementById('clearSelectionBtn');
 
+  // Cada lead tem um checkbox no card (mobile) e outro na linha da tabela (desktop);
+  // só um dos dois fica visível por vez, mas os dois continuam no DOM. getChecked()
+  // deduplica por `value` e syncPeers mantém os dois em sincronia ao alternar de layout.
   function getChecked() {
-    return [...document.querySelectorAll('.row-checkbox:checked')];
+    const byId = new Map();
+    document.querySelectorAll('.row-checkbox').forEach((cb) => {
+      if (cb.checked) byId.set(cb.value, cb);
+    });
+    return [...byId.values()];
+  }
+
+  function totalRows() {
+    return new Set([...document.querySelectorAll('.row-checkbox')].map((cb) => cb.value)).size;
+  }
+
+  function syncPeers(changedCb) {
+    document.querySelectorAll(`.row-checkbox[value="${changedCb.value}"]`).forEach((cb) => {
+      cb.checked = changedCb.checked;
+    });
   }
 
   function updateBar() {
@@ -249,11 +369,11 @@
       selectAll.checked = false;
       selectAll.indeterminate = false;
     }
-    const all = document.querySelectorAll('.row-checkbox');
+    const total = totalRows();
     if (checked.length === 0) {
       selectAll.indeterminate = false;
       selectAll.checked = false;
-    } else if (checked.length === all.length) {
+    } else if (checked.length === total) {
       selectAll.indeterminate = false;
       selectAll.checked = true;
     } else {
@@ -262,7 +382,10 @@
   }
 
   document.querySelectorAll('.row-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateBar);
+    cb.addEventListener('change', function () {
+      syncPeers(this);
+      updateBar();
+    });
   });
 
   selectAll.addEventListener('change', function () {

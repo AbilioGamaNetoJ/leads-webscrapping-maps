@@ -4,7 +4,7 @@ from typing import Annotated
 from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import inspect, text
@@ -71,4 +71,36 @@ def index(request: Request, current_user: CurrentUser):
             "business_types": as_dicts(include_all=True),
             "current_user": current_user,
         },
+    )
+
+
+# Rotas do PWA: públicas (sem CurrentUser) porque precisam responder mesmo sem sessão —
+# o manifest e o service worker são buscados pelo navegador antes/independente do login,
+# e /offline é servida pelo próprio service worker quando o dispositivo está sem rede.
+
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(
+        BASE_DIR / "static" / "sw.js",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    # Servido fora de /static: o StaticFiles mount não reconhece a extensão
+    # .webmanifest e devolveria um Content-Type genérico em vez de application/manifest+json.
+    return FileResponse(
+        BASE_DIR / "static" / "manifest.webmanifest",
+        media_type="application/manifest+json",
+    )
+
+
+@app.get("/offline")
+def offline(request: Request):
+    return templates.TemplateResponse(
+        "offline.html",
+        {"request": request, "current_user": None},
     )

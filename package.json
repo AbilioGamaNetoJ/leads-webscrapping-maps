@@ -1,0 +1,13 @@
+{
+  "name": "prospector-codex-create",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build assets (Tailwind CSS) para o Prospector — Codex Create.",
+  "scripts": {
+    "css": "tailwindcss -i ./static/src/input.css -o ./static/app.css --minify",
+    "css:watch": "tailwindcss -i ./static/src/input.css -o ./static/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.13"
+  }
+}

@@ -1,0 +1,59 @@
+<div id="profileSheetBackdrop" class="sheet-backdrop lg:hidden"></div>
+
+<div id="profileSheet" class="sheet-panel lg:hidden" role="dialog" aria-modal="true" aria-labelledby="profileSheetTitle">
+  <div class="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-gray-200 dark:bg-[#252340]"></div>
+
+  <div class="px-5 pt-4 pb-2">
+    {% if current_user %}
+    <div class="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-[#1d1c2e]">
+      <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 dark:bg-[#251f45] text-brand-700 dark:text-brand-300 font-semibold">
+        {{ (current_user.full_name or current_user.email or '?')[0] | upper }}
+      </div>
+      <div class="min-w-0">
+        <p id="profileSheetTitle" class="font-semibold text-gray-800 dark:text-white truncate">{{ current_user.full_name or current_user.email or 'Usuário' }}</p>
+        <p class="text-xs text-gray-500 dark:text-[#8c8ba8]">{{ 'Administrador' if current_user.role == 'admin' else 'Equipe' }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="py-2 space-y-1">
+      <button type="button" data-theme-toggle
+        class="w-full min-h-[48px] flex items-center gap-3 px-2 rounded-lg text-sm font-medium text-gray-700 dark:text-[#c4c3da] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+        <svg class="w-5 h-5 text-gray-500 dark:text-[#8c8ba8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <span data-theme-label>Modo escuro</span>
+      </button>
+
+      <button type="button" id="installAppBtn"
+        class="hidden w-full min-h-[48px] flex items-center gap-3 px-2 rounded-lg text-sm font-medium text-gray-700 dark:text-[#c4c3da] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+        <svg class="w-5 h-5 text-gray-500 dark:text-[#8c8ba8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        </svg>
+        <span>Instalar app</span>
+      </button>
+
+      {% if current_user %}
+      <a href="/logout"
+        class="w-full min-h-[48px] flex items-center gap-3 px-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-[#2a1117] transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sair
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- iOS install instructions sheet -->
+<div id="iosInstallHint" class="hidden fixed inset-x-4 bottom-24 z-[80] lg:hidden bg-gray-900 dark:bg-[#252340] text-white text-sm rounded-xl shadow-2xl p-4">
+  <p class="font-medium mb-1">Instalar o Prospector</p>
+  <p class="text-gray-300">Toque em <strong>Compartilhar</strong>
+    <svg class="inline w-4 h-4 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0-12l-4 4m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+    e depois em <strong>Adicionar à Tela de Início</strong>.</p>
+  <button type="button" id="iosInstallHintClose" class="mt-2 text-xs text-gray-400 hover:text-white">Entendi</button>
+</div>

@@ -312,6 +312,7 @@
   const summaryText = document.getElementById('summaryText');
   const resultsCard = document.getElementById('resultsCard');
   const resultsBody = document.getElementById('resultsBody');
+  const resultsCardsList = document.getElementById('resultsCardsList');
   const resultsCount = document.getElementById('resultsCount');
   const exportBtn = document.getElementById('exportBtn');
   const cancelSearchBtn = document.getElementById('cancelSearchBtn');
@@ -323,6 +324,37 @@
     title: noResultsTitle.textContent,
     body: noResultsBody.textContent,
   };
+
+  // --- Filtros colapsáveis (mobile) ---
+  // No desktop `lg:block` mantém o formulário sempre visível; abaixo de lg o painel
+  // fecha depois de disparar uma busca, mostrando um resumo em texto no lugar.
+  const filtersToggleBtn = document.getElementById('filtersToggleBtn');
+  const filtersChevron = document.getElementById('filtersChevron');
+  const filtersFormWrap = document.getElementById('filtersFormWrap');
+  const filtersSummary = document.getElementById('filtersSummary');
+
+  function setFiltersOpen(open) {
+    filtersFormWrap.classList.toggle('hidden', !open);
+    filtersSummary.classList.toggle('hidden', open);
+    if (filtersToggleBtn) filtersToggleBtn.setAttribute('aria-expanded', String(open));
+    if (filtersChevron) filtersChevron.classList.toggle('rotate-180', !open);
+  }
+
+  function updateFiltersSummary(payload) {
+    if (!filtersSummary) return;
+    const typeLabel = document.getElementById('business_type_search').value;
+    const parts = [payload.city];
+    if (payload.neighborhood) parts.push(payload.neighborhood);
+    parts.push(typeLabel);
+    parts.push(`até ${payload.quantity}`);
+    filtersSummary.textContent = parts.filter(Boolean).join(' · ');
+  }
+
+  if (filtersToggleBtn) {
+    filtersToggleBtn.addEventListener('click', () => {
+      setFiltersOpen(filtersFormWrap.classList.contains('hidden'));
+    });
+  }
 
   let searchAbort = null;
 
@@ -360,8 +392,16 @@
     </span>`;
   }
 
-  function buildMapsLink(url) {
-    if (!url) return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+  function buildMapsLink(url, variant) {
+    if (!url) return variant === 'card' ? '' : '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+    if (variant === 'card') {
+      return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+        class="maps-link flex-1 min-w-[104px] inline-flex items-center justify-center gap-1.5 text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-[#1d1740] hover:bg-brand-100 dark:hover:bg-[#252340] font-medium text-sm px-3 py-2.5 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>Maps</a>`;
+    }
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
       class="maps-link inline-flex items-center gap-1 text-brand-600 hover:text-brand-500 font-medium text-xs transition-colors">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,14 +424,20 @@
     return `https://wa.me/${digits}`;
   }
 
-  function buildWhatsAppButton(phone) {
+  function buildWhatsAppButton(phone, variant) {
     const url = toWhatsAppUrl(phone);
-    if (!url) return '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+    const icon = `<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>`;
+    if (!url) return variant === 'card' ? '' : '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
+    if (variant === 'card') {
+      return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+        class="flex-1 min-w-[104px] inline-flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2.5 rounded-lg transition-colors">
+        ${icon}Mensagem</a>`;
+    }
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
       class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>Enviar mensagem</a>`;
+      ${icon}Enviar mensagem</a>`;
   }
 
   function escapeHtml(str) {
@@ -419,9 +465,38 @@
     `;
   }
 
+  function buildCard(biz) {
+    const hasPhone = biz.phone && biz.phone !== 'Não informado';
+    const mapsBtn = buildMapsLink(biz.maps_url, 'card');
+    const waBtn = buildWhatsAppButton(biz.phone, 'card');
+    const copyBtn = hasPhone
+      ? `<button type="button" onclick="copyPhone('${escapeHtml(biz.phone)}')" title="Copiar telefone"
+          class="flex-shrink-0 w-11 flex items-center justify-center rounded-lg border border-gray-200 dark:border-[#252340] text-gray-500 dark:text-[#8c8ba8] hover:bg-gray-50 dark:hover:bg-[#1d1c2e] transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        </button>`
+      : '';
+    return `
+      <div class="p-4 space-y-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="cell-name font-semibold text-gray-800 truncate">${escapeHtml(biz.name)}</p>
+            <p class="cell-addr text-sm text-gray-500 mt-0.5 line-clamp-2">${escapeHtml(biz.address)}</p>
+          </div>
+          <div class="flex-shrink-0 pt-0.5">${buildRatingBadge(biz.rating, biz.user_ratings_total)}</div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="cell-phone text-sm text-gray-600 truncate">${escapeHtml(biz.phone)}</span>
+          ${buildWebsiteBadge(biz.has_website)}
+        </div>
+        ${(mapsBtn || waBtn || copyBtn) ? `<div class="flex items-stretch gap-2 pt-1">${mapsBtn}${waBtn}${copyBtn}</div>` : ''}
+      </div>
+    `;
+  }
+
   function resetResults() {
     hideAll();
     resultsBody.innerHTML = '';
+    resultsCardsList.innerHTML = '';
     resultsCount.textContent = '';
     progressText.textContent = '';
   }
@@ -429,6 +504,7 @@
   function appendResults(rows) {
     if (!rows.length) return;
     resultsBody.insertAdjacentHTML('beforeend', rows.map(buildRow).join(''));
+    resultsCardsList.insertAdjacentHTML('beforeend', rows.map(buildCard).join(''));
     resultsCard.classList.remove('hidden');
     resultsCard.classList.add('fade-in');
   }
@@ -485,6 +561,9 @@
       min_rating: parseFloat(document.getElementById('min_rating').value) || 0,
       min_reviews: parseInt(document.getElementById('min_reviews').value, 10) || 0,
     };
+
+    updateFiltersSummary(basePayload);
+    setFiltersOpen(false);
 
     searchAbort = new AbortController();
     setLoading(true);

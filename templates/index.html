@@ -6,21 +6,33 @@
 
   <!-- Search Form -->
   <div class="lg:col-span-1">
-    <div class="bg-white dark:bg-[#17162a] rounded-2xl shadow-sm border border-gray-200 dark:border-[#252340] p-6 sticky top-6 transition-colors">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-[#e2e1f0] mb-5 flex items-center gap-2">
-        <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
-        </svg>
-        Filtros de Busca
-      </h2>
+    <div class="bg-white dark:bg-[#17162a] rounded-2xl shadow-sm border border-gray-200 dark:border-[#252340] p-6 lg:sticky lg:top-6 transition-colors">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-[#e2e1f0] flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+          </svg>
+          Filtros de Busca
+        </h2>
+        <!-- No mobile o formulário fecha após a busca; o desktop mantém sempre visível -->
+        <button type="button" id="filtersToggleBtn" aria-expanded="true" aria-controls="filtersFormWrap"
+          class="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 dark:text-[#5c5b78] hover:text-gray-600 dark:hover:text-[#9897b3] transition-colors"
+          aria-label="Mostrar ou esconder os filtros">
+          <svg id="filtersChevron" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+      </div>
+      <p id="filtersSummary" class="hidden lg:hidden text-xs text-gray-500 dark:text-[#8c8ba8] mb-4 truncate"></p>
 
+      <div id="filtersFormWrap" class="lg:block mt-4">
       <form id="searchForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="city">Cidade *</label>
           <div class="relative">
             <input id="city" name="city" type="text" required placeholder="Ex: Florianópolis" autocomplete="off"
-              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
             <ul id="citySuggestions"
               class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
             </ul>
@@ -31,7 +43,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="neighborhood">Bairro <span class="text-gray-400 dark:text-[#5c5b78] font-normal text-xs">(opcional)</span></label>
           <div class="relative">
             <input id="neighborhood" name="neighborhood" type="text" placeholder="Ex: Centro — ou deixe vazio para toda a cidade" autocomplete="off"
-              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
             <ul id="neighborhoodSuggestions"
               class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
             </ul>
@@ -42,7 +54,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="business_type_search">Tipo de Negócio *</label>
           <div class="relative">
             <input id="business_type_search" type="text" required value="Todos os tipos" placeholder="Todos os tipos — ou digite um nicho" autocomplete="off"
-              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
             <input id="business_type" name="business_type" type="hidden" value="all" />
             <ul id="businessTypeSuggestions"
               class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#17162a] border border-gray-200 dark:border-[#252340] rounded-lg shadow-lg hidden max-h-52 overflow-y-auto">
@@ -54,7 +66,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="quantity">Quantidade</label>
           <select id="quantity" name="quantity"
-            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
+            class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
             <option value="5">5 resultados</option>
             <option value="10">10 resultados</option>
             <option value="20" selected>20 resultados</option>
@@ -71,7 +83,7 @@
           <div class="flex flex-col">
             <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="min_rating">Nota mínima</label>
             <select id="min_rating" name="min_rating"
-              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition bg-white">
               <option value="0" selected>Qualquer nota</option>
               <option value="3">3.0+</option>
               <option value="3.5">3.5+</option>
@@ -82,7 +94,7 @@
           <div class="flex flex-col">
             <label class="block text-sm font-medium text-gray-700 dark:text-[#9897b3] mb-1" for="min_reviews">Mín. de avaliações</label>
             <input id="min_reviews" name="min_reviews" type="number" min="0" step="1" placeholder="Ex: 10"
-              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
+              class="w-full rounded-lg border border-gray-300 dark:border-[#252340] dark:bg-[#111021] dark:text-[#e2e1f0] dark:placeholder-[#4a496a] px-3 py-2.5 md:py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition" />
           </div>
         </div>
 
@@ -135,6 +147,7 @@
         </a>
         <p class="text-xs text-gray-400 dark:text-[#5c5b78] text-center mt-1">Exporta todos os leads do banco</p>
       </div>
+      </div>
     </div>
   </div>
 
@@ -174,13 +187,18 @@
       <p class="text-gray-500 dark:text-[#5c5b78] text-sm">Todos os negócios já foram vistos anteriormente ou não há resultados para os filtros selecionados.</p>
     </div>
 
-    <!-- Results table -->
+    <!-- Results -->
     <div id="resultsCard" class="hidden fade-in bg-white dark:bg-[#17162a] rounded-2xl border border-gray-200 dark:border-[#252340] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-gray-100 dark:border-[#1d1c2e] flex items-center justify-between">
         <h3 class="font-semibold text-gray-800 dark:text-[#c4c3da] text-base" id="resultsTitle">Resultados</h3>
         <span class="text-xs text-gray-400 dark:text-[#5c5b78]" id="resultsCount"></span>
       </div>
-      <div class="overflow-x-auto">
+
+      <!-- Mobile: cards -->
+      <div id="resultsCardsList" class="md:hidden divide-y divide-gray-100 dark:divide-[#1d1c2e]"></div>
+
+      <!-- Desktop: tabela -->
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 dark:bg-[#111021] text-gray-500 dark:text-[#8c8ba8] text-xs uppercase tracking-wider">
             <tr>

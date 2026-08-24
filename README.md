@@ -16,6 +16,8 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 - 📜 Histórico paginado com filtro por nome e por presença de site
 - 🔐 Login por e-mail e senha, com convites administrados pelo proprietário
 - 👤 Perfis locais, papéis `admin`/`member` e bloqueio imediato de acesso
+- 📱 Mobile-first, com barra de navegação inferior, listas em cards e formulários colapsáveis abaixo de `lg`/`md`
+- 📲 PWA instalável em Android, iOS e desktop, com página offline de fallback
 
 ---
 
@@ -25,7 +27,8 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 |---|---|
 | ⚙️ Backend | Python 3.12 + FastAPI |
 | 🎨 Templates | Jinja2 |
-| 💅 Estilização | Tailwind CSS (CDN) |
+| 💅 Estilização | Tailwind CSS (compilado com o Tailwind CLI, `static/app.css`) |
+| 📲 PWA | Manifest + Service Worker próprios (`static/manifest.webmanifest`, `static/sw.js`) |
 | 🗄️ Banco de dados | Neon (PostgreSQL serverless) |
 | 📦 ORM | SQLAlchemy (síncrono) |
 | 🌐 HTTP client | httpx |
@@ -38,6 +41,7 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 ## ✅ Pré-requisitos
 
 - 🐍 Python 3.12+
+- 🟢 Node.js 18+ (só para compilar o CSS do Tailwind — não entra no runtime da aplicação)
 - ☁️ Conta no [Neon](https://neon.tech) (free tier disponível)
 - ☁️ Projeto no Google Cloud com **Places API (New)** e **Geocoding API** habilitadas
 - 🔐 Aplicação no [Clerk](https://clerk.com) com login por e-mail e senha
@@ -91,7 +95,18 @@ Com o venv ativo:
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Aplicar a migração
+### 4️⃣ Compilar o CSS
+
+O Tailwind roda pelo CLI, não pelo CDN — é preciso gerar `static/app.css` antes de subir o servidor:
+
+```bash
+npm install
+npm run css
+```
+
+Durante o desenvolvimento, `npm run css:watch` recompila a cada alteração. **Sempre rode `npm run css` antes de commitar** qualquer classe Tailwind nova usada em `templates/` ou `static/app.js` — o arquivo gerado é comitado, o `.env`/CI não builda CSS.
+
+### 5️⃣ Aplicar a migração
 
 ```bash
 alembic upgrade head
@@ -101,7 +116,7 @@ Ela preserva (ou cria, se o Neon estiver vazio) a tabela legada `businesses`,
 cria `app_users` e garante as colunas de avaliação dos leads. Execute-a uma vez
 para cada banco Neon antes do deploy.
 
-### 5️⃣ Iniciar o servidor
+### 6️⃣ Iniciar o servidor
 
 ```bash
 uvicorn main:app --reload
@@ -113,7 +128,7 @@ A aplicação ficará disponível em `http://localhost:8000`.
 
 > ⚠️ **Atenção:** sempre ative o venv (`source .venv/bin/activate`) antes de rodar o servidor em uma nova sessão do terminal.
 
-### 6️⃣ Testes
+### 7️⃣ Testes
 
 Instale as dependências de desenvolvimento e rode a suíte (SQLite em arquivo temporário; Google e Neon não são chamados):
 
@@ -202,7 +217,8 @@ deploy. Após adicionar as variáveis, clique em **Redeploy** para aplicar.
 - ⏱️ O plano **Hobby** (gratuito) tem timeout de **10 segundos** por requisição. Por isso a busca é feita **em lotes**: o navegador chama `POST /search` várias vezes, cada uma devolvendo até 100 leads mais o `cursor` do próximo lote, e a tabela vai sendo preenchida progressivamente. Cada request isolada fica bem abaixo do limite mesmo numa busca de 1000 resultados. Detalhes em [Busca em lotes](#-busca-em-lotes).
 - 💸 O modo **Todos os tipos** varre as 140 categorias do catálogo (566 consultas textuais distintas). É a opção mais cara em chamadas à Places API — meça o consumo antes de rodar buscas de 1000 em produção.
 - 🗄️ A tabela `businesses` é criada automaticamente no primeiro acesso (via `create_all` no startup).
-- 📂 Arquivos estáticos (`app.js`) são servidos pelo próprio FastAPI — sem necessidade de configuração extra.
+- 📂 Arquivos estáticos (`app.js`, `app.css`, ícones do PWA) são servidos pelo próprio FastAPI — sem necessidade de configuração extra.
+- 🎨 O `vercel.json` só builda `main.py` (`@vercel/python`) — não roda `npm install`/`npm run css`. **Rode `npm run css` e commite `static/app.css` antes de cada deploy** que mude alguma classe Tailwind.
 
 ---
 
@@ -210,10 +226,12 @@ deploy. Após adicionar as variáveis, clique em **Redeploy** para aplicar.
 
 ```
 prospector/
-├── main.py                   # 🚀 Instância do FastAPI e routers
+├── main.py                   # 🚀 Instância do FastAPI, routers e rotas do PWA
 ├── .env                      # 🔒 Variáveis de ambiente (não commitado)
 ├── .env.example              # 📄 Template do .env
-├── requirements.txt          # 📦 Dependências
+├── requirements.txt          # 📦 Dependências Python
+├── package.json              # 📦 Dependência única: tailwindcss (build do CSS)
+├── tailwind.config.js        # 🎨 Paleta `brand` e conteúdo escaneado pelo Tailwind
 ├── database/
 │   ├── connection.py         # 🔌 Engine e SessionLocal
 │   └── models.py             # 📊 Modelo ORM da tabela businesses
@@ -231,11 +249,20 @@ prospector/
 │   ├── deduplication.py      # 🚫 Verificação de place_id no banco
 │   └── xlsx_generator.py     # 📑 Geração do XLSX em memória
 ├── templates/
-│   ├── base.html             # 🏗️ Layout base com Tailwind
+│   ├── base.html             # 🏗️ Layout base, cabeçalho e inclusão da barra inferior
+│   ├── _bottom_nav.html      # 📱 Barra de navegação inferior (mobile)
+│   ├── _profile_sheet.html   # 📱 Folha de perfil: tema, instalar app, sair
+│   ├── offline.html          # 📴 Fallback servido pelo service worker sem rede
 │   ├── index.html            # 🔍 Página de busca
 │   └── historico.html        # 📋 Página de histórico
 └── static/
-    └── app.js                # ⚡ AJAX e renderização de resultados
+    ├── src/input.css         # 🎨 Fonte do Tailwind (`npm run css` gera app.css)
+    ├── app.css                # 🎨 CSS compilado, comitado
+    ├── app.js                 # ⚡ AJAX e renderização de resultados (tabela + cards)
+    ├── pwa.js                 # 📲 Registro do service worker e fluxo de instalação
+    ├── sw.js                  # 📲 Service worker (cache do shell estático + /offline)
+    ├── manifest.webmanifest   # 📲 Manifest do PWA
+    └── icons/                 # 📲 Ícones gerados a partir do símbolo da marca
 ```
 
 ---
@@ -254,6 +281,25 @@ prospector/
 | `DELETE` | `/auth/session` | Encerra a sessão local |
 | `POST` | `/webhooks/clerk` | Sincroniza perfis recebidos do Clerk |
 | `GET` | `/admin/users` | Gestão de usuários, somente administrador |
+| `GET` | `/manifest.webmanifest` | 📲 Manifest do PWA |
+| `GET` | `/sw.js` | 📲 Service worker (servido da raiz para controlar toda a navegação) |
+| `GET` | `/offline` | 📴 Página de fallback exibida pelo service worker sem conexão |
+
+---
+
+## 📲 PWA — instalar o app
+
+O Prospector pode ser instalado como app em Android, iOS e desktop:
+
+- **Android / Chrome / Edge (desktop):** abra o menu **Perfil** na barra inferior (ou o
+  ícone de tema no cabeçalho, no desktop) e toque em **Instalar app**. O botão só aparece
+  depois que o navegador dispara o evento `beforeinstallprompt`.
+- **iOS (Safari):** o Safari não oferece esse evento — o mesmo botão **Instalar app** mostra
+  o passo a passo: toque em **Compartilhar** e depois em **Adicionar à Tela de Início**.
+
+O app funciona offline apenas para a casca estática (abrir sem rede mostra a página
+`/offline`) — buscas, histórico e exportação sempre exigem conexão, porque dependem do
+banco de dados compartilhado pela equipe.
 
 ---
 

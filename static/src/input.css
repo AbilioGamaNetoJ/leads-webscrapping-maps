@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+  display: none !important;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.theme-toggle {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover {
+  transform: rotate(30deg);
+}
+
+/* Dark mode for JS-generated autocomplete items */
+.dark #citySuggestions,
+.dark #neighborhoodSuggestions {
+  background-color: #17162a;
+  border-color: #252340;
+}
+
+.dark #citySuggestions li,
+.dark #neighborhoodSuggestions li {
+  color: #9897b3;
+}
+
+.dark #citySuggestions li:hover,
+.dark #neighborhoodSuggestions li:hover,
+.dark #citySuggestions li.highlighted,
+.dark #neighborhoodSuggestions li.highlighted {
+  background-color: #252340 !important;
+  color: #e2e1f0 !important;
+}
+
+/* Dark mode for JS-generated result rows */
+.dark #resultsBody tr:hover {
+  background-color: #1d1c2e;
+}
+
+.dark #resultsBody .cell-name {
+  color: #f0eff8;
+}
+
+.dark #resultsBody .cell-addr {
+  color: #a09fc0;
+}
+
+.dark #resultsBody .cell-phone {
+  color: #c4c3da;
+}
+
+.dark #resultsBody .badge-no-site {
+  background-color: #0d2e1e;
+  color: #4ade80;
+}
+
+.dark #resultsBody .badge-has-site {
+  background-color: #252340;
+  color: #9897b3;
+}
+
+.dark #resultsBody .maps-link {
+  color: #a78bfa;
+}
+
+/* Smooth color-scheme for native controls */
+.dark {
+  color-scheme: dark;
+}
+
+@layer components {
+  /* Bottom navigation (mobile-first) */
+  .bn-item {
+    @apply relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-gray-500 dark:text-[#8c8ba8] transition-colors;
+  }
+
+  .bn-item.is-active {
+    @apply text-brand-600 dark:text-brand-300 font-semibold;
+  }
+
+  .bn-icon-wrap {
+    @apply flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200;
+  }
+
+  .bn-item.is-active .bn-icon-wrap {
+    @apply -translate-y-4 h-11 w-11 bg-brand-600 text-white shadow-lg ring-4 ring-gray-50 dark:ring-[#0d0d1a];
+  }
+
+  .bn-item.is-active .bn-icon-wrap svg {
+    @apply text-white;
+  }
+
+  /* Profile bottom sheet */
+  .sheet-backdrop {
+    @apply fixed inset-0 z-[60] bg-black/40 opacity-0 pointer-events-none transition-opacity duration-200;
+  }
+
+  .sheet-backdrop.is-open {
+    @apply opacity-100 pointer-events-auto;
+  }
+
+  .sheet-panel {
+    @apply fixed inset-x-0 bottom-0 z-[70] translate-y-full rounded-t-2xl bg-white dark:bg-[#17162a] border-t border-gray-200 dark:border-[#252340] shadow-2xl transition-transform duration-200;
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+
+  .sheet-panel.is-open {
+    @apply translate-y-0;
+  }
+}
