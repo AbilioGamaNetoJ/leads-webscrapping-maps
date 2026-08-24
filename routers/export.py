@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
@@ -27,8 +27,8 @@ def export(
     businesses = query.order_by(Business.created_at.desc()).all()
     xlsx = generate_xlsx(businesses)
 
-    return StreamingResponse(
-        xlsx,
+    return Response(
+        content=xlsx.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=negocios-prospectados.xlsx"},
     )

@@ -395,14 +395,14 @@
   function buildMapsLink(url, variant) {
     if (!url) return variant === 'card' ? '' : '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
     if (variant === 'card') {
-      return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+      return `<a href="${escapeHtml(url)}" rel="noreferrer"
         class="maps-link flex-1 min-w-[104px] inline-flex items-center justify-center gap-1.5 text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-[#1d1740] hover:bg-brand-100 dark:hover:bg-[#252340] font-medium text-sm px-3 py-2.5 rounded-lg transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
         </svg>Maps</a>`;
     }
-    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+    return `<a href="${escapeHtml(url)}" rel="noreferrer"
       class="maps-link inline-flex items-center gap-1 text-brand-600 hover:text-brand-500 font-medium text-xs transition-colors">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -431,11 +431,11 @@
       </svg>`;
     if (!url) return variant === 'card' ? '' : '<span class="text-gray-300 dark:text-[#3a3858] text-xs">—</span>';
     if (variant === 'card') {
-      return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+      return `<a href="${escapeHtml(url)}" rel="noreferrer"
         class="flex-1 min-w-[104px] inline-flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2.5 rounded-lg transition-colors">
         ${icon}Mensagem</a>`;
     }
-    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"
+    return `<a href="${escapeHtml(url)}" rel="noreferrer"
       class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">
       ${icon}Enviar mensagem</a>`;
   }

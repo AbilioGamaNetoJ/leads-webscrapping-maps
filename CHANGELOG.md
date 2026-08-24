@@ -62,5 +62,15 @@ e o versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- Links de Maps e WhatsApp (nas listas de busca e histórico) e o botão Exportar
+  deixaram de abrir em `target="_blank"`. No PWA instalado, uma nova aba/janela tira o
+  usuário do contexto do app sem deixar como voltar, forçando fechar e reabrir; sem
+  `target="_blank"`, a navegação para fora do escopo acontece na mesma janela e o
+  Android mostra a barra de retorno ao app padrão do modo standalone.
+- `GET /export` passou a devolver os bytes do XLSX diretamente (`Response`) no lugar de
+  um `StreamingResponse` sobre o `BytesIO` do openpyxl, evitando a iteração linha a linha
+  implícita desse tipo de objeto. Testes de `services/xlsx_generator.py` e `GET /export`
+  passaram a conferir o valor de cada uma das 8 colunas (antes só cabeçalho e nome
+  eram testados) — não foi reproduzido um caso em que os dados venham incompletos.
 - O estado "Nenhum resultado" mantinha para sempre o texto de erro depois da primeira
   falha de busca; agora os textos originais são restaurados.
