@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
+from typing import TypedDict
 
 from services.business_type_catalog import NICHE_CATALOG
+
+# Semente fixa: o catálogo é agrupado por tema (comida, saúde, construção...), então
+# consumi-lo na ordem natural encheria o primeiro lote de "todos" com um tema só.
+# Embaralhar com semente constante dá variedade e mantém o plano reprodutível — requisito
+# do cursor, que é apenas um índice nele.
+_ALL_ORDER_SEED = 20240101
+
+ALL_BUSINESS_TYPES_VALUE = "all"
+ALL_BUSINESS_TYPES_LABEL = "Todos os tipos"
+ALL_BUSINESS_TYPES_ALIASES = ("todos", "tudo", "geral", "todas as categorias", "qualquer")
 
 
 @dataclass(frozen=True)
@@ -16,6 +28,23 @@ class BusinessType:
     @property
     def search_terms(self) -> tuple[str, ...]:
         return tuple(dict.fromkeys((self.label, *self.queries, *self.aliases)))
+
+
+class BusinessTypeOption(TypedDict):
+    """Formato consumido pelo combobox do formulário e pelo filtro do histórico."""
+
+    value: str
+    label: str
+    aliases: list[str]
+
+
+@dataclass(frozen=True)
+class SearchQuery:
+    """Uma consulta textual do plano de busca, com a categoria que a originou."""
+
+    text: str
+    included_type: str | None
+    category_value: str
 
 
 def _format_label(raw_label: str) -> str:
@@ -104,16 +133,67 @@ _types_by_value = {item.value: item for item in OFFICIAL_BUSINESS_TYPES}
 _types_by_value.update({item.value: item for item in NICHE_BUSINESS_TYPES})
 BUSINESS_TYPES: tuple[BusinessType, ...] = tuple(_types_by_value.values())
 
+# Ordem usada só pelo plano "todos" — o catálogo em si segue na ordem original.
+_SHUFFLED_BUSINESS_TYPES: tuple[BusinessType, ...] = tuple(
+    random.Random(_ALL_ORDER_SEED).sample(BUSINESS_TYPES, len(BUSINESS_TYPES))
+)
+
 
 def get_business_type(value: str) -> BusinessType | None:
     return _types_by_value.get(value)
 
 
-def as_dicts() -> list[dict[str, str | list[str]]]:
-    return [
+def resolve_search_plan(value: str) -> tuple[SearchQuery, ...]:
+    """Lista determinística de consultas para uma categoria — ou para todas elas.
+
+    No modo "todos" as categorias entram embaralhadas e intercaladas (termo 1 de cada uma,
+    depois termo 2 de cada uma...) para que consumir o plano em sequência devolva nichos
+    variados. A ordem é estável entre chamadas porque o cursor da busca em lotes é um
+    índice nela.
+    """
+    if value == ALL_BUSINESS_TYPES_VALUE:
+        categories: tuple[BusinessType, ...] = _SHUFFLED_BUSINESS_TYPES
+    else:
+        category = get_business_type(value)
+        if not category:
+            return ()
+        categories = (category,)
+
+    term_lists = [item.search_terms for item in categories]
+    deepest = max((len(terms) for terms in term_lists), default=0)
+
+    # Termos repetidos entre categorias (ex.: "Encanador" aparece em 5 nichos) viram uma
+    # consulta só; variantes com `included_type` diferente são mantidas por buscarem coisas
+    # distintas na Places API.
+    plan: dict[tuple[str, str | None], SearchQuery] = {}
+    for depth in range(deepest):
+        for category, terms in zip(categories, term_lists):
+            if depth >= len(terms):
+                continue
+            text = terms[depth]
+            plan.setdefault(
+                (text, category.included_type),
+                SearchQuery(text, category.included_type, category.value),
+            )
+
+    return tuple(plan.values())
+
+
+def as_dicts(include_all: bool = False) -> list[BusinessTypeOption]:
+    options: list[BusinessTypeOption] = [
         {"value": item.value, "label": item.label, "aliases": list(item.search_terms)}
         for item in BUSINESS_TYPES
     ]
+    if include_all:
+        options.insert(
+            0,
+            {
+                "value": ALL_BUSINESS_TYPES_VALUE,
+                "label": ALL_BUSINESS_TYPES_LABEL,
+                "aliases": list(ALL_BUSINESS_TYPES_ALIASES),
+            },
+        )
+    return options
 
 
 def type_labels() -> dict[str, str]:

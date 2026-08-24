@@ -35,6 +35,10 @@
 | 2026-08-21 | Migrações do legado `businesses` são idempotentes | Um Neon novo não tinha a tabela criada pela revisão-base e a aplicação pode iniciar antes do Alembic | A revisão-base cria a tabela somente quando ausente; a revisão de ratings verifica colunas antes de adicioná-las |
 | 2026-08-21 | Resposta de convites do Clerk é normalizada | O Backend API retornou uma lista JSON em `GET /v1/invitations`, enquanto o código esperava sempre um envelope `data` | A tela administrativa aceita lista direta e envelope paginado |
 | 2026-08-21 | Perfil é enriquecido no primeiro login | O JWT de sessão pode conter apenas o identificador; o usuário aparecia como `user_...` até o webhook chegar | `POST /auth/session` consulta o usuário no Clerk e grava nome, e-mail e imagem; falhas de enriquecimento não bloqueiam o login |
+| 2026-08-24 | Busca de até 1000 leads é feita em lotes com cursor no cliente | Uma request única não cabe nos 10s da Vercel Hobby, e um job assíncrono exigiria tabela de jobs em serverless | `POST /search` roda um lote e devolve o `cursor` do próximo; o `app.js` repete até o alvo, `cursor: null`, ou 3 lotes seguidos sem novidade |
+| 2026-08-24 | Cada termo do plano é esgotado dentro do lote | Mantém o cursor como um simples índice, sem trafegar `pageToken` do Google pelo navegador | A onda é dimensionada por `remaining / PAGE_SIZE`: larga o bastante para misturar nichos, estreita o bastante para não pagar por resultados descartados (~4% de desperdício medido) |
+| 2026-08-24 | Modo "Todos os tipos" faz fan-out completo do catálogo | Decisão do usuário: cobertura máxima, já que é a única forma de volumes altos serem alcançáveis | 566 consultas textuais distintas (após deduplicar termos repetidos entre nichos); é a opção mais cara em chamadas à Places API |
+| 2026-08-24 | Ordem das categorias no modo "todos" é embaralhada com semente fixa | O catálogo é agrupado por tema, então a ordem natural encheria o primeiro lote só de restaurantes | Determinismo é requisito do cursor; 5 nichos distintos já nas 14 primeiras linhas |
 
 ---
 

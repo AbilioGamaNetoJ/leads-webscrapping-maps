@@ -1,3 +1,5 @@
+from database.models import Business
+
 SEARCH_PAYLOAD = {
     "city": "Florianópolis",
     "neighborhood": "Centro",
@@ -31,3 +33,25 @@ def test_search_rejects_invalid_business_type(client, mock_google):
     response = client.post("/search", json=payload)
     assert response.status_code == 400
     assert "inválido" in response.json()["detail"]
+
+
+def test_search_accepts_the_all_business_type(client, db_session, mock_google):
+    payload = {**SEARCH_PAYLOAD, "business_type": "all"}
+    response = client.post("/search", json=payload)
+    assert response.status_code == 200
+    assert response.json()["summary"]["new_saved"] == 1
+
+    # Mesmo no modo "todos", o lead guarda a categoria real que o encontrou.
+    saved = db_session.query(Business).one()
+    assert saved.business_type != "all"
+
+
+def test_search_response_carries_the_batch_cursor(client, mock_google):
+    response = client.post("/search", json={**SEARCH_PAYLOAD, "quantity": 1000})
+    assert response.status_code == 200
+    assert response.json()["cursor"] is None
+
+
+def test_search_rejects_quantity_above_the_ceiling(client, mock_google):
+    response = client.post("/search", json={**SEARCH_PAYLOAD, "quantity": 1001})
+    assert response.status_code == 422

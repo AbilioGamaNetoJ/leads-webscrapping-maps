@@ -5,6 +5,7 @@ from database.connection import SessionLocal, engine, get_db
 from database.models import AppUser, Base, Business
 from main import app
 from services.auth import get_current_user
+from services.deduplication import existing_place_ids
 
 
 @pytest.fixture
@@ -43,17 +44,15 @@ def mock_google(monkeypatch):
     async def fake_coordinates(*_args, **_kwargs):
         return {"lat": -27.59, "lng": -48.55}
 
-    async def fake_fetch_category(_client, _category, _rectangle, _quantity):
-        return (
-            [
-                {
-                    "id": "place-1",
-                    "displayName": {"text": "Padaria Teste"},
-                    "formattedAddress": "Rua das Flores, 10",
-                }
-            ],
-            1,
-        )
+    async def fake_collect_batch(_client, db, plan, *_args, **_kwargs):
+        place = {
+            "id": "place-1",
+            "displayName": {"text": "Padaria Teste"},
+            "formattedAddress": "Rua das Flores, 10",
+        }
+        if existing_place_ids(db, [place["id"]]):
+            return [], 1, 1, None
+        return [(place, plan[0])], 1, 0, None
 
     async def fake_details(_client, _place_id):
         return {
@@ -63,7 +62,7 @@ def mock_google(monkeypatch):
         }
 
     monkeypatch.setattr("services.places.get_coordinates", fake_coordinates)
-    monkeypatch.setattr("services.places._fetch_category_places", fake_fetch_category)
+    monkeypatch.setattr("services.places._collect_batch", fake_collect_batch)
     monkeypatch.setattr("services.places._fetch_details", fake_details)
 
 

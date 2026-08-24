@@ -68,7 +68,7 @@ def index(request: Request, current_user: CurrentUser):
         "index.html",
         {
             "request": request,
-            "business_types": as_dicts(),
+            "business_types": as_dicts(include_all=True),
             "current_user": current_user,
         },
     )

@@ -7,7 +7,8 @@ Ferramenta interna da **Codex Create** 🏢 para prospecção de negócios locai
 ## ✨ Funcionalidades
 
 - 🔎 Busca por cidade + bairro com conversão automática de endereço em coordenadas (Geocoding API)
-- 🏷️ Filtro por tipo de negócio (restaurante, barbearia, salão de beleza, farmácia, etc.)
+- 🏷️ Filtro por tipo de negócio, com **Todos os tipos** como padrão — varre as 140 categorias de uma vez
+- 📦 Busca em lotes de até **1000 leads**, com a tabela preenchendo progressivamente e botão para parar
 - 🎯 Toggle **"Somente sem site"** para focar nos leads com maior potencial de conversão
 - 🚫 Deduplicação automática — negócios já vistos nunca são salvos duas vezes
 - 📋 Resumo pós-busca: novos encontrados · sem site · já vistos antes
@@ -198,7 +199,8 @@ deploy. Após adicionar as variáveis, clique em **Redeploy** para aplicar.
 
 ### 📌 Observações sobre a Vercel
 
-- ⏱️ O plano **Hobby** (gratuito) tem timeout de **10 segundos** por requisição. As chamadas ao Place Details são feitas em paralelo (`asyncio.gather`), então buscas de até 100 resultados tipicamente completam em 2–5 segundos. O gargalo real é a paginação do Nearby Search (sequencial por limitação da API), que adiciona ~200ms por página de 20 resultados.
+- ⏱️ O plano **Hobby** (gratuito) tem timeout de **10 segundos** por requisição. Por isso a busca é feita **em lotes**: o navegador chama `POST /search` várias vezes, cada uma devolvendo até 100 leads mais o `cursor` do próximo lote, e a tabela vai sendo preenchida progressivamente. Cada request isolada fica bem abaixo do limite mesmo numa busca de 1000 resultados. Detalhes em [Busca em lotes](#-busca-em-lotes).
+- 💸 O modo **Todos os tipos** varre as 140 categorias do catálogo (566 consultas textuais distintas). É a opção mais cara em chamadas à Places API — meça o consumo antes de rodar buscas de 1000 em produção.
 - 🗄️ A tabela `businesses` é criada automaticamente no primeiro acesso (via `create_all` no startup).
 - 📂 Arquivos estáticos (`app.js`) são servidos pelo próprio FastAPI — sem necessidade de configuração extra.
 
@@ -243,7 +245,7 @@ prospector/
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/` | 🏠 Página principal com formulário de busca |
-| `POST` | `/search` | 🔎 Executa busca e salva novos leads |
+| `POST` | `/search` | 🔎 Executa **um lote** da busca e salva os novos leads ([detalhes](#-busca-em-lotes)) |
 | `GET` | `/export` | 📥 Download do XLSX com todos os leads |
 | `GET` | `/export?only_without_website=true` | 📥 Download apenas dos leads sem site |
 | `GET` | `/historico` | 📜 Histórico paginado de leads salvos |
@@ -266,6 +268,37 @@ O catálogo está centralizado em
 [`services/business_type_catalog.py`](./services/business_type_catalog.py).
 Para categorias sem um tipo oficial da Places API, a busca usa os termos do
 catálogo sem enviar um `includedType` inválido.
+
+A primeira opção da lista é **Todos os tipos** (valor `all`), que também é o
+padrão do formulário. Ela não é uma categoria real: monta um plano com os
+termos de **todas** as categorias, embaralhados com semente fixa e
+intercalados, para que os primeiros resultados já venham de nichos variados.
+Cada lead continua sendo salvo com a categoria real que o encontrou, então o
+filtro do histórico segue funcionando normalmente.
+
+---
+
+## 📦 Busca em lotes
+
+`POST /search` executa **um lote** por chamada, não a busca inteira:
+
+| Campo | Direção | Papel |
+|---|---|---|
+| `quantity` | entrada | Alvo total da busca (5 a 1000) |
+| `batch_size` | entrada | Máximo de leads deste lote (5 a 200, padrão 100) |
+| `cursor` | entrada | Índice do próximo termo do plano de busca (0 no primeiro lote) |
+| `cursor` | saída | Cursor do lote seguinte — `null` quando o plano acabou |
+
+O `static/app.js` repete a chamada até atingir `quantity`, receber `cursor: null`
+ou acumular 3 lotes seguidos sem nada novo (cidade já varrida). Cada termo do
+plano é esgotado dentro de um lote — por isso o cursor é apenas um índice e
+nenhum `pageToken` do Google trafega pelo navegador.
+
+> ⚠️ **`quantity` é um teto, não uma promessa.** A Places API devolve no máximo
+> 20 lugares por página e 3 páginas por termo — 60 por consulta textual. Um
+> nicho estreito num bairro pequeno se esgota bem antes de 1000; a busca
+> simplesmente termina com `cursor: null` e o que existir. Volumes altos são
+> alcançáveis principalmente no modo **Todos os tipos**.
 
 ---
 

@@ -142,8 +142,6 @@
     const hiddenEl = document.getElementById('business_type');
     const listEl = document.getElementById('businessTypeSuggestions');
     const types = loadBusinessTypes();
-    const maxItems = 8;
-    let debounceTimer = null;
     let activeIndex = -1;
 
     function getItems() {
@@ -164,7 +162,8 @@
 
     function filterTypes(query) {
       const q = normalizeText(query);
-      if (!q) return types.slice(0, maxItems);
+      // Sem texto, a lista inteira fica disponível (o <ul> já rola) — "Todos os tipos" no topo.
+      if (!q) return types;
 
       const scored = types
         .map((type) => {
@@ -180,7 +179,7 @@
         .filter(Boolean)
         .sort((a, b) => a.score - b.score || a.type.label.localeCompare(b.type.label, 'pt-BR'));
 
-      return scored.slice(0, maxItems).map((item) => item.type);
+      return scored.map((item) => item.type);
     }
 
     function renderSuggestions(suggestions) {
@@ -230,15 +229,18 @@
       return exact.length === 1 ? exact[0] : null;
     }
 
+    // O filtro é local: roda a cada tecla, sem debounce.
     inputEl.addEventListener('input', () => {
       hiddenEl.value = '';
       inputEl.setCustomValidity('');
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => showForQuery(inputEl.value), 80);
+      showForQuery(inputEl.value);
     });
 
     inputEl.addEventListener('focus', () => {
-      showForQuery(inputEl.value);
+      // Seleciona o texto atual para que digitar já substitua o valor padrão, e abre a
+      // lista completa — o usuário está prestes a trocar de nicho, não a reconfirmar o atual.
+      inputEl.select();
+      showForQuery('');
     });
 
     inputEl.addEventListener('keydown', (e) => {
@@ -312,12 +314,24 @@
   const resultsBody = document.getElementById('resultsBody');
   const resultsCount = document.getElementById('resultsCount');
   const exportBtn = document.getElementById('exportBtn');
+  const cancelSearchBtn = document.getElementById('cancelSearchBtn');
+  const progressText = document.getElementById('progressText');
+
+  const noResultsTitle = noResultsState.querySelector('h3');
+  const noResultsBody = noResultsState.querySelector('p');
+  const noResultsDefaults = {
+    title: noResultsTitle.textContent,
+    body: noResultsBody.textContent,
+  };
+
+  let searchAbort = null;
 
   function setLoading(loading) {
     searchBtn.disabled = loading;
     spinner.classList.toggle('hidden', !loading);
     searchBtnText.textContent = loading ? 'Buscando...' : 'Buscar Negócios';
     searchBtn.classList.toggle('opacity-75', loading);
+    cancelSearchBtn.classList.toggle('hidden', !loading);
   }
 
   function hideAll() {
@@ -389,27 +403,8 @@
       .replace(/'/g, '&#39;');
   }
 
-  function renderResults(data) {
-    const { results, summary } = data;
-
-    hideAll();
-
-    const parts = [];
-    parts.push(`<span class="text-brand-600 font-bold">${summary.new_saved}</span> novos encontrados`);
-    parts.push(`<span class="text-green-600 font-bold">${summary.without_website}</span> sem site`);
-    parts.push(`<span class="text-gray-400">${summary.skipped_duplicates}</span> já vistos antes`);
-
-    summaryText.innerHTML = parts.join(' &nbsp;&middot;&nbsp; ');
-    summaryBar.classList.remove('hidden');
-    summaryBar.classList.add('fade-in');
-
-    if (results.length === 0) {
-      noResultsState.classList.remove('hidden');
-      noResultsState.classList.add('fade-in');
-      return;
-    }
-
-    resultsBody.innerHTML = results.map(biz => `
+  function buildRow(biz) {
+    return `
       <tr class="hover:bg-gray-50 transition-colors">
         <td class="cell-name px-4 py-3 font-medium text-gray-800">${escapeHtml(biz.name)}</td>
         <td class="cell-addr px-4 py-3 text-gray-500 max-w-xs">
@@ -421,65 +416,147 @@
         <td class="px-4 py-3 text-center">${buildMapsLink(biz.maps_url)}</td>
         <td class="px-4 py-3 text-center">${buildWhatsAppButton(biz.phone)}</td>
       </tr>
-    `).join('');
+    `;
+  }
 
-    resultsCount.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
+  function resetResults() {
+    hideAll();
+    resultsBody.innerHTML = '';
+    resultsCount.textContent = '';
+    progressText.textContent = '';
+  }
+
+  function appendResults(rows) {
+    if (!rows.length) return;
+    resultsBody.insertAdjacentHTML('beforeend', rows.map(buildRow).join(''));
     resultsCard.classList.remove('hidden');
     resultsCard.classList.add('fade-in');
+  }
 
-    // Update export button to reflect current filter
-    const onlyWithout = document.getElementById('only_without_website').checked;
-    exportBtn.href = onlyWithout ? '/export?only_without_website=true' : '/export';
+  function updateSummary(totals) {
+    const parts = [];
+    parts.push(`<span class="text-brand-600 font-bold">${totals.new_saved}</span> novos encontrados`);
+    parts.push(`<span class="text-green-600 font-bold">${totals.without_website}</span> sem site`);
+    parts.push(`<span class="text-gray-400">${totals.skipped_duplicates}</span> já vistos antes`);
+
+    summaryText.innerHTML = parts.join(' &nbsp;&middot;&nbsp; ');
+    summaryBar.classList.remove('hidden');
+    summaryBar.classList.add('fade-in');
+  }
+
+  function setProgress(collected, target, done) {
+    progressText.textContent = done
+      ? `${collected} de até ${target}`
+      : `${collected} de até ${target} — buscando...`;
+    resultsCount.textContent = `${collected} resultado${collected !== 1 ? 's' : ''}`;
+  }
+
+  function showNoResults() {
+    noResultsTitle.textContent = noResultsDefaults.title;
+    noResultsBody.textContent = noResultsDefaults.body;
+    noResultsState.classList.remove('hidden');
+    noResultsState.classList.add('fade-in');
   }
 
   function showError(message) {
-    hideAll();
+    // Não esconde as linhas já recebidas: um lote pode falhar depois de outros terem dado certo.
+    noResultsTitle.textContent = 'Erro ao buscar';
+    noResultsBody.textContent = message;
     noResultsState.classList.remove('hidden');
     noResultsState.classList.add('fade-in');
-    noResultsState.querySelector('h3').textContent = 'Erro ao buscar';
-    noResultsState.querySelector('p').textContent = message;
   }
+
+  cancelSearchBtn.addEventListener('click', () => {
+    if (searchAbort) searchAbort.abort();
+  });
 
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!businessTypeField.ensureSelected()) return;
-    setLoading(true);
 
-    const payload = {
+    const target = parseInt(document.getElementById('quantity').value, 10);
+    const basePayload = {
       city: document.getElementById('city').value.trim(),
       neighborhood: document.getElementById('neighborhood').value.trim(),
       business_type: document.getElementById('business_type').value,
-      quantity: parseInt(document.getElementById('quantity').value, 10),
+      quantity: target,
       only_without_website: document.getElementById('only_without_website').checked,
       neighborhood_place_id: selectedNeighborhoodPlaceId,
       min_rating: parseFloat(document.getElementById('min_rating').value) || 0,
       min_reviews: parseInt(document.getElementById('min_reviews').value, 10) || 0,
     };
 
+    searchAbort = new AbortController();
+    setLoading(true);
+    resetResults();
+
+    const totals = { new_saved: 0, with_website: 0, without_website: 0, skipped_duplicates: 0 };
+    let cursor = 0;
+    let collected = 0;
+    let failed = false;
+    // Numa cidade já varrida todo lote volta vazio; sem esta trava o laço percorreria o
+    // plano inteiro (centenas de consultas pagas) para não mostrar nada.
+    let emptyBatches = 0;
+    const MAX_EMPTY_BATCHES = 3;
+
+    // Buscas grandes vêm em lotes: cada request devolve o cursor do próximo termo do plano,
+    // até o alvo ser atingido ou o plano acabar (cursor === null).
     try {
-      const response = await fetch('/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      while (cursor !== null && collected < target) {
+        const response = await fetch('/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...basePayload,
+            cursor,
+            batch_size: Math.max(5, Math.min(100, target - collected)),
+          }),
+          signal: searchAbort.signal,
+        });
 
-      if (response.status === 401) {
-        window.location.assign('/login?return_to=' + encodeURIComponent(window.location.pathname));
-        return;
+        if (response.status === 401) {
+          window.location.assign('/login?return_to=' + encodeURIComponent(window.location.pathname));
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError(data.detail || 'Erro desconhecido.');
+          failed = true;
+          break;
+        }
+
+        emptyBatches = data.results.length ? 0 : emptyBatches + 1;
+
+        appendResults(data.results);
+        collected += data.results.length;
+        totals.new_saved += data.summary.new_saved;
+        totals.with_website += data.summary.with_website;
+        totals.without_website += data.summary.without_website;
+        totals.skipped_duplicates += data.summary.skipped_duplicates;
+        cursor = data.cursor;
+
+        updateSummary(totals);
+        setProgress(collected, target, false);
+
+        if (emptyBatches >= MAX_EMPTY_BATCHES) break;
       }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        showError(data.detail || 'Erro desconhecido.');
-        return;
-      }
-
-      renderResults(data);
     } catch (err) {
-      showError('Não foi possível conectar ao servidor. Tente novamente.');
+      if (err.name !== 'AbortError') {
+        showError('Não foi possível conectar ao servidor. Tente novamente.');
+        failed = true;
+      }
     } finally {
+      searchAbort = null;
       setLoading(false);
     }
+
+    setProgress(collected, target, true);
+    if (collected === 0 && !failed) showNoResults();
+
+    // Update export button to reflect current filter
+    const onlyWithout = document.getElementById('only_without_website').checked;
+    exportBtn.href = onlyWithout ? '/export?only_without_website=true' : '/export';
   });
 })();

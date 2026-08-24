@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import AppUser
 from services.auth import get_current_user, require_same_origin
-from services.places import search_businesses
+from services.places import DEFAULT_BATCH_SIZE, search_businesses
 
 router = APIRouter()
 DbSession = Annotated[Session, Depends(get_db)]
@@ -19,11 +19,15 @@ class SearchRequest(BaseModel):
     city: str = Field(..., min_length=1)
     neighborhood: str = Field("", min_length=0)
     business_type: str = Field(..., min_length=1)
-    quantity: int = Field(..., ge=5, le=100)
+    quantity: int = Field(..., ge=5, le=1000)
     only_without_website: bool = False
     neighborhood_place_id: str = ""
     min_rating: float = Field(0, ge=0, le=5)
     min_reviews: int = Field(0, ge=0)
+    # Busca em lotes: `cursor` é o índice do próximo termo do plano de busca e volta na
+    # resposta como `cursor` (None quando não há mais o que buscar).
+    cursor: int = Field(0, ge=0)
+    batch_size: int = Field(DEFAULT_BATCH_SIZE, ge=5, le=200)
 
 
 @router.post("/search")
@@ -44,6 +48,8 @@ async def search(
             neighborhood_place_id=request.neighborhood_place_id,
             min_rating=request.min_rating,
             min_reviews=request.min_reviews,
+            cursor=request.cursor,
+            batch_size=request.batch_size,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
