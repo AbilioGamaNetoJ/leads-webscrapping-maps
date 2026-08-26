@@ -16,9 +16,16 @@ load_dotenv()
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 PLACES_API_BASE = "https://places.googleapis.com/v1"
+
+# `websiteUri`, `internationalPhoneNumber` e `googleMapsUri` são campos da própria busca.
+# Eles entram no mesmo SKU Enterprise que `rating`/`userRatingCount` já forçavam, então
+# pedi-los aqui não muda o preço da chamada — e dispensa a chamada de Place Details, que
+# custava US$ 0,020 por empresa e respondia por toda a fatura do projeto.
 SEARCH_FIELD_MASK = (
     "places.id,places.displayName,places.formattedAddress,"
-    "places.rating,places.userRatingCount,nextPageToken"
+    "places.rating,places.userRatingCount,"
+    "places.websiteUri,places.internationalPhoneNumber,places.googleMapsUri,"
+    "nextPageToken"
 )
 
 # A Places API devolve no máximo 20 lugares por página e 3 páginas por consulta textual,
@@ -31,6 +38,10 @@ QUERIES_PER_WAVE = 8
 MAX_WAVES_PER_BATCH = 6
 DETAILS_CONCURRENCY = 25
 DEFAULT_BATCH_SIZE = 100
+
+# Numa região esgotada as ondas passam a voltar sem nenhum lugar inédito. Sem esta trava
+# o lote seguiria pagando páginas até completar `MAX_WAVES_PER_BATCH`.
+MAX_BARREN_WAVES = 3
 
 
 def _circle_to_rectangle(lat: float, lng: float, radius_m: float) -> dict:
@@ -65,7 +76,6 @@ async def _fetch_search_page(
     client: httpx.AsyncClient,
     text_query: str,
     rectangle: dict,
-    max_results: int,
     included_type: str | None,
     page_token: str | None,
 ) -> dict:
@@ -75,10 +85,12 @@ async def _fetch_search_page(
             "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
             "X-Goog-FieldMask": SEARCH_FIELD_MASK,
         },
+        # Sempre `PAGE_SIZE`: a página é cobrada por chamada, não por resultado, então
+        # pedir menos que 20 paga o mesmo e colhe menos.
         json=build_search_body(
             text_query,
             rectangle,
-            max_results,
+            PAGE_SIZE,
             included_type,
             page_token,
         ),
@@ -93,39 +105,12 @@ async def _fetch_search_page(
     return data
 
 
-async def _drain_query(
-    client: httpx.AsyncClient,
-    query: SearchQuery,
-    rectangle: dict,
-    max_results: int,
-) -> tuple[list[dict], int]:
-    """Esgota um termo de busca, seguindo o nextPageToken até o limite da Places API.
-
-    Esgotar cada termo dentro do lote é o que permite que o cursor entre lotes seja apenas
-    um índice: nenhum pageToken precisa trafegar de volta pelo navegador.
-    """
-    places: list[dict] = []
-    total_checked = 0
-    page_token: str | None = None
-
-    for _ in range(MAX_PAGES_PER_QUERY):
-        page = await _fetch_search_page(
-            client,
-            query.text,
-            rectangle,
-            min(PAGE_SIZE, max(1, max_results - len(places))),
-            query.included_type,
-            page_token,
-        )
-        page_places = page.get("places", [])
-        total_checked += len(page_places)
-        places.extend(page_places)
-
-        page_token = page.get("nextPageToken")
-        if not page_token or not page_places or len(places) >= max_results:
-            break
-
-    return places, total_checked
+def _passes_floors(place: dict, min_rating: float, min_reviews: int) -> bool:
+    if min_rating > 0 and (place.get("rating") or 0) < min_rating:
+        return False
+    if min_reviews > 0 and (place.get("userRatingCount") or 0) < min_reviews:
+        return False
+    return True
 
 
 async def _collect_batch(
@@ -137,63 +122,109 @@ async def _collect_batch(
     cursor: int,
     min_rating: float,
     min_reviews: int,
-) -> tuple[list[tuple[dict, SearchQuery]], int, int, int | None]:
-    """Consome o plano a partir de `cursor` até encher o lote ou esgotar as ondas."""
+    only_without_website: bool = False,
+) -> tuple[
+    list[tuple[dict, SearchQuery]],
+    list[tuple[dict, SearchQuery]],
+    int,
+    int,
+    int | None,
+]:
+    """Consome o plano a partir de `cursor` até encher o lote ou esgotar as ondas.
+
+    Devolve os aceitos e, à parte, os recusados pelo filtro de site: eles já foram pagos,
+    então vão para o banco só para a deduplicação não pagar por eles de novo.
+    """
     collected: list[tuple[dict, SearchQuery]] = []
+    rejected: list[tuple[dict, SearchQuery]] = []
     seen_place_ids: set[str] = set()
     total_checked = 0
     skipped_duplicates = 0
     index = max(0, cursor)
     waves = 0
+    barren_waves = 0
 
     while index < len(plan) and len(collected) < batch_size and waves < MAX_WAVES_PER_BATCH:
         remaining = batch_size - len(collected)
-        # Cada termo é esgotado por inteiro — é o que mantém o cursor sendo só um índice.
         # A onda é dimensionada pelo que falta, supondo a colheita típica de um termo
         # (uma página): larga o suficiente para o lote misturar nichos, estreita o
         # suficiente para não pagar por resultados que seriam descartados no corte.
         wave_size = min(QUERIES_PER_WAVE, max(2, math.ceil(remaining / PAGE_SIZE)))
         wave = plan[index : index + wave_size]
-        pages = await asyncio.gather(
-            *[_drain_query(client, query, rectangle, remaining) for query in wave]
-        )
         index += len(wave)
         waves += 1
 
-        per_query: list[list[tuple[dict, SearchQuery]]] = []
-        for query, (places, checked) in zip(wave, pages):
-            total_checked += checked
-            accepted: list[tuple[dict, SearchQuery]] = []
-            for place in places:
-                place_id = place.get("id")
-                if not place_id or place_id in seen_place_ids:
-                    continue
-                seen_place_ids.add(place_id)
-                if min_rating > 0 and (place.get("rating") or 0) < min_rating:
-                    continue
-                if min_reviews > 0 and (place.get("userRatingCount") or 0) < min_reviews:
-                    continue
-                accepted.append((place, query))
-            per_query.append(accepted)
+        # Uma página por termo por rodada, e só pagina de novo se o lote ainda estiver
+        # faltando. Antes cada termo drenava as 3 páginas de uma vez, o que buscava até
+        # 300 lugares para preencher 100 vagas — o excedente era descartado já pago.
+        harvest: list[list[tuple[dict, SearchQuery]]] = [[] for _ in wave]
+        tokens: list[str | None] = [None] * len(wave)
+        active = list(range(len(wave)))
+
+        for _ in range(MAX_PAGES_PER_QUERY):
+            if not active:
+                break
+
+            pages = await asyncio.gather(
+                *[
+                    _fetch_search_page(
+                        client, wave[i].text, rectangle, wave[i].included_type, tokens[i]
+                    )
+                    for i in active
+                ]
+            )
+
+            still_active = []
+            for i, page in zip(active, pages):
+                places = page.get("places", [])
+                total_checked += len(places)
+                for place in places:
+                    place_id = place.get("id")
+                    if not place_id or place_id in seen_place_ids:
+                        continue
+                    seen_place_ids.add(place_id)
+                    if not _passes_floors(place, min_rating, min_reviews):
+                        continue
+                    harvest[i].append((place, wave[i]))
+
+                tokens[i] = page.get("nextPageToken")
+                if tokens[i] and places:
+                    still_active.append(i)
+
+            active = still_active
+            if sum(len(found) for found in harvest) >= remaining:
+                break
 
         # Intercala os termos da onda: sem isso o corte por `batch_size` entregaria as
         # primeiras dezenas de linhas todas do mesmo nicho.
         candidates = [
             item
-            for row in zip_longest(*per_query)
+            for row in zip_longest(*harvest)
             for item in row
             if item is not None
         ]
 
+        accepted_before = len(collected)
         known_ids = existing_place_ids(db, [place["id"] for place, _ in candidates])
         for place, query in candidates:
             if place["id"] in known_ids:
                 skipped_duplicates += 1
-            elif len(collected) < batch_size:
+                continue
+            # O `websiteUri` agora vem na própria busca, então o filtro roda antes de a
+            # linha ocupar uma vaga do lote. É o que faz "pedi 20" devolver 20 — antes o
+            # corte acontecia depois do Details e encolhia o lote já pago.
+            if only_without_website and place.get("websiteUri"):
+                rejected.append((place, query))
+                continue
+            if len(collected) < batch_size:
                 collected.append((place, query))
 
+        barren_waves = 0 if len(collected) > accepted_before else barren_waves + 1
+        if barren_waves >= MAX_BARREN_WAVES:
+            break
+
     next_cursor = index if index < len(plan) else None
-    return collected, total_checked, skipped_duplicates, next_cursor
+    return collected, rejected, total_checked, skipped_duplicates, next_cursor
 
 
 async def _fetch_details(client: httpx.AsyncClient, place_id: str) -> dict:
@@ -206,6 +237,48 @@ async def _fetch_details(client: httpx.AsyncClient, place_id: str) -> dict:
     )
     response.raise_for_status()
     return response.json()
+
+
+async def _fill_missing_phones(
+    client: httpx.AsyncClient, collected: list[tuple[dict, SearchQuery]]
+) -> None:
+    """Completa por Place Details só quem voltou da busca sem telefone.
+
+    A busca já traz `internationalPhoneNumber`; esta chamada existe para os poucos casos
+    em que o campo não vem preenchido. Antes era uma chamada paga por empresa.
+    """
+    pending = [place for place, _ in collected if not place.get("internationalPhoneNumber")]
+    if not pending:
+        return
+
+    semaphore = asyncio.Semaphore(DETAILS_CONCURRENCY)
+
+    async def fetch(place: dict) -> None:
+        async with semaphore:
+            try:
+                details = await _fetch_details(client, place["id"])
+            except Exception:
+                return
+        for field in ("internationalPhoneNumber", "websiteUri", "googleMapsUri"):
+            if not place.get(field) and details.get(field):
+                place[field] = details[field]
+
+    await asyncio.gather(*[fetch(place) for place in pending])
+
+
+def _to_business(place: dict, query: SearchQuery, has_website: bool) -> Business:
+    return Business(
+        place_id=place["id"],
+        name=place.get("displayName", {}).get("text") or "Não informado",
+        address=place.get("formattedAddress") or "Não informado",
+        phone=place.get("internationalPhoneNumber") or "Não informado",
+        maps_url=place.get("googleMapsUri") or "",
+        has_website=has_website,
+        rating=place.get("rating"),
+        user_ratings_total=place.get("userRatingCount"),
+        # Guarda a categoria real mesmo no modo "todos", para o histórico continuar filtrável.
+        business_type=query.category_value,
+    )
 
 
 async def search_businesses(
@@ -233,7 +306,7 @@ async def search_businesses(
     rectangle = _circle_to_rectangle(coords["lat"], coords["lng"], radius)
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        collected, total_checked, skipped_duplicates, next_cursor = await _collect_batch(
+        collected, rejected, total_checked, skipped_duplicates, next_cursor = await _collect_batch(
             client,
             db,
             plan,
@@ -242,75 +315,44 @@ async def search_businesses(
             cursor,
             min_rating,
             min_reviews,
+            only_without_website,
         )
 
-        details_semaphore = asyncio.Semaphore(DETAILS_CONCURRENCY)
-
-        async def fetch_details(place_id: str) -> dict:
-            async with details_semaphore:
-                return await _fetch_details(client, place_id)
-
-        details_list = await asyncio.gather(
-            *[fetch_details(place["id"]) for place, _ in collected],
-            return_exceptions=True,
-        )
+        await _fill_missing_phones(client, collected)
 
     results = []
     businesses = []
-    with_website = 0
+    with_website = len(rejected)
     without_website = 0
 
-    for (place, query), details in zip(collected, details_list):
-        if isinstance(details, Exception):
-            continue
-
-        has_website = bool(details.get("websiteUri"))
-        if only_without_website and has_website:
-            with_website += 1
-            continue
-
+    for place, query in collected:
+        has_website = bool(place.get("websiteUri"))
         if has_website:
             with_website += 1
         else:
             without_website += 1
 
-        name = place.get("displayName", {}).get("text") or "Não informado"
-        address = place.get("formattedAddress") or "Não informado"
-        phone = details.get("internationalPhoneNumber") or "Não informado"
-        maps_url = details.get("googleMapsUri") or ""
-        rating = place.get("rating")
-        user_ratings_total = place.get("userRatingCount")
-
-        businesses.append(
-            Business(
-                place_id=place["id"],
-                name=name,
-                address=address,
-                phone=phone,
-                maps_url=maps_url,
-                has_website=has_website,
-                rating=rating,
-                user_ratings_total=user_ratings_total,
-                # Guarda a categoria real mesmo no modo "todos", para o histórico continuar filtrável.
-                business_type=query.category_value,
-            )
-        )
+        businesses.append(_to_business(place, query, has_website))
         results.append(
             {
-                "name": name,
-                "address": address,
-                "phone": phone,
-                "maps_url": maps_url,
+                "name": businesses[-1].name,
+                "address": businesses[-1].address,
+                "phone": businesses[-1].phone,
+                "maps_url": businesses[-1].maps_url,
                 "has_website": has_website,
-                "rating": rating,
-                "user_ratings_total": user_ratings_total,
+                "rating": place.get("rating"),
+                "user_ratings_total": place.get("userRatingCount"),
             }
         )
 
+    # Os recusados pelo filtro de site também vão para o banco. Sem isso a deduplicação
+    # não os conhece e toda busca futura na mesma região volta a pagar por eles.
+    persisted = businesses + [_to_business(place, query, True) for place, query in rejected]
+
     # Um commit por lote: contra o Postgres serverless, um commit por linha custaria
     # dezenas de segundos em buscas grandes.
-    if businesses:
-        db.add_all(businesses)
+    if persisted:
+        db.add_all(persisted)
         db.commit()
 
     return {

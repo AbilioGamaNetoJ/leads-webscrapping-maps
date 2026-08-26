@@ -9,6 +9,9 @@ e o versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- `scripts/validate_search_fields.py` — compara, com dados reais, os campos devolvidos
+  pelo Text Search com os do Place Details, para confirmar que a busca entrega o mesmo
+  `websiteUri`/telefone antes de confiar na troca.
 - Redesign mobile-first com barra de navegação inferior (Buscar · Histórico · Exportar ·
   Usuários para admin · Perfil), no padrão de app nativo: ícone ativo elevado num círculo
   sobre a barra. O cabeçalho de topo com a navegação horizontal e o menu de usuário passam
@@ -38,6 +41,28 @@ e o versionamento segue o [Semantic Versioning](https://semver.org/lang/pt-BR/).
   em um round-trip por bloco, no lugar de uma consulta por resultado.
 
 ### Alterado
+
+- **Custo da Places API por lead cortado em ~95%.** A busca passou a pedir
+  `websiteUri`, `internationalPhoneNumber` e `googleMapsUri` no próprio `X-Goog-FieldMask`
+  do `places:searchText`. Esses campos entram no mesmo SKU Enterprise que `rating` e
+  `userRatingCount` já forçavam, então não encarecem a chamada — e tornam supérflua a
+  chamada de Place Details, que era uma requisição paga (US$ 0,020) por empresa
+  encontrada. O Place Details virou fallback: só é chamado para os poucos lugares que
+  voltam da busca sem telefone.
+- Cada página de busca passa a pedir sempre 20 resultados. A página é cobrada por
+  chamada, não por resultado, e o código pedia `batch_size - coletados` — no fim de cada
+  lote isso pagava página cheia por 3 ou 4 candidatos.
+- A onda de termos agora busca a primeira página de todos os termos e só pagina de novo
+  se o lote continuar faltando. Antes cada termo drenava as 3 páginas de uma vez, o que
+  buscava até 300 lugares para preencher 100 vagas e descartava o excedente já pago.
+- O filtro **Somente sem site** passou a rodar durante a coleta, não depois do Place
+  Details. Pedir 20 leads agora devolve 20: antes o lote juntava 20, pagava 20 detalhes e
+  entregava só os que sobravam do filtro.
+- Empresas com site encontradas no modo **Somente sem site** passam a ser salvas no banco
+  (sem aparecer na tabela). Elas já foram pagas; sem persisti-las a deduplicação não as
+  conhecia e toda busca futura na mesma região pagava por elas de novo.
+- Lote interrompe após 3 ondas seguidas sem nenhum lead inédito (`MAX_BARREN_WAVES`). Numa
+  região já varrida o lote seguia pagando páginas até completar as 6 ondas.
 
 - Tailwind deixou de ser carregado via `cdn.tailwindcss.com` (compilador de desenvolvimento
   rodando no navegador, ~400KB, sem cache confiável offline). Agora é compilado com o
