@@ -45,21 +45,21 @@ def mock_google(monkeypatch):
         return {"lat": -27.59, "lng": -48.55}
 
     async def fake_collect_batch(_client, db, plan, *_args, **_kwargs):
+        # A busca já devolve telefone, site e link do Maps — o Place Details deixou de
+        # ser chamado por empresa, então o fake precisa refletir esses campos.
         place = {
             "id": "place-1",
             "displayName": {"text": "Padaria Teste"},
             "formattedAddress": "Rua das Flores, 10",
-        }
-        if existing_place_ids(db, [place["id"]]):
-            return [], 1, 1, None
-        return [(place, plan[0])], 1, 0, None
-
-    async def fake_details(_client, _place_id):
-        return {
             "internationalPhoneNumber": "+55 48 3025-6255",
-            "websiteUri": None,
             "googleMapsUri": "https://maps.google.com/?cid=1",
         }
+        if existing_place_ids(db, [place["id"]]):
+            return [], [], 1, 1, None
+        return [(place, plan[0])], [], 1, 0, None
+
+    async def fake_details(_client, _place_id):
+        raise AssertionError("Place Details não deve ser chamado quando a busca traz telefone")
 
     monkeypatch.setattr("services.places.get_coordinates", fake_coordinates)
     monkeypatch.setattr("services.places._collect_batch", fake_collect_batch)

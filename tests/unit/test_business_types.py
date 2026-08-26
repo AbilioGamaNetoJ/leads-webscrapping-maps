@@ -111,7 +111,7 @@ class BusinessTypeCatalogTests(unittest.TestCase):
         category = get_business_type("caca_vazamento")
         plan = resolve_search_plan("caca_vazamento")
         # batch_size alto o bastante para o lote percorrer o plano inteiro.
-        collected, total_checked, skipped, next_cursor = asyncio.run(
+        collected, _, total_checked, skipped, next_cursor = asyncio.run(
             _collect_batch(client, FakeDb(), plan, {"low": {}, "high": {}}, 200, 0, 0, 0)
         )
 
@@ -170,7 +170,7 @@ class BatchCursorTests(unittest.TestCase):
         rectangle = {"low": {}, "high": {}}
 
         first_client = FakeClient()
-        first, _, _, cursor = asyncio.run(
+        first, _, _, _, cursor = asyncio.run(
             _collect_batch(first_client, FakeDb(), plan, rectangle, 2, 0, 0, 0)
         )
         self.assertEqual(len(first), 2)
@@ -178,7 +178,7 @@ class BatchCursorTests(unittest.TestCase):
         self.assertGreater(cursor, 0)
 
         second_client = FakeClient()
-        second, _, _, _ = asyncio.run(
+        second, _, _, _, _ = asyncio.run(
             _collect_batch(second_client, FakeDb(), plan, rectangle, 2, cursor, 0, 0)
         )
 
@@ -192,7 +192,7 @@ class BatchCursorTests(unittest.TestCase):
 
     def test_exhausted_plan_reports_no_next_cursor(self):
         plan = resolve_search_plan("caca_vazamento")
-        _, _, _, cursor = asyncio.run(
+        _, _, _, _, cursor = asyncio.run(
             _collect_batch(FakeClient(), FakeDb(), plan, {"low": {}, "high": {}}, 500, 0, 0, 0)
         )
         self.assertIsNone(cursor)
@@ -200,7 +200,7 @@ class BatchCursorTests(unittest.TestCase):
     def test_known_place_ids_are_counted_as_duplicates(self):
         plan = resolve_search_plan("caca_vazamento")
         db = FakeDb(known={f"{plan[0].text}-1"})
-        collected, _, skipped, _ = asyncio.run(
+        collected, _, _, skipped, _ = asyncio.run(
             _collect_batch(FakeClient(), db, plan, {"low": {}, "high": {}}, 5, 0, 0, 0)
         )
 
@@ -210,7 +210,7 @@ class BatchCursorTests(unittest.TestCase):
     def test_rating_and_review_floors_are_applied_before_the_batch_cut(self):
         plan = resolve_search_plan("caca_vazamento")
         client = FakeClient(rating=3.0, reviews=5)
-        collected, _, _, _ = asyncio.run(
+        collected, _, _, _, _ = asyncio.run(
             _collect_batch(client, FakeDb(), plan, {"low": {}, "high": {}}, 5, 0, 4.5, 0)
         )
         self.assertEqual(collected, [])
