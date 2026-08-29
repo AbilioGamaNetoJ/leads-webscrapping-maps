@@ -7,7 +7,7 @@
 >
 > **Estado dos números:** o custo por lead pós-correção ainda **não foi medido em produção**.
 > Onde aparece um valor de custo, está marcado como medido ou estimado. Não construa
-> precificação final em cima dos estimados sem medir antes (ver [Medição obrigatória](#medição-obrigatória)).
+> precificação final em cima dos estimados sem medir antes (ver [Medição obrigatória](#12-medição-obrigatória)).
 
 ---
 
@@ -47,8 +47,18 @@ BYOK resolve os dois problemas de uma vez:
 | Capital necessário | Nenhum | Contrato de licenciamento |
 | Fricção de onboarding | **Alta** — cliente cria conta no GCP | Nenhuma |
 
-O único custo real do BYOK é a fricção de cadastro. Mitigue com onboarding guiado
-(seção 8), não trocando o modelo.
+O custo do BYOK é a fricção de cadastro — e ela é **em grande parte automatizável**, o que
+muda bastante a conta. Ver seção 8: via OAuth com o Google Cloud, o sistema cria o projeto,
+ativa as APIs, gera a chave, aplica restrições e define a cota diária. O cliente clica em
+"Conectar com Google" e autoriza.
+
+O que **não** dá para automatizar é a criação da conta de faturamento com cartão, que o Google
+exige no console dele. São ~3 minutos, uma vez.
+
+Teste de realidade sobre essa fricção: o comprador é dono de agência ou prestador que vende
+site. Ele já tem cartão empresarial e já assina ferramenta. E, com o estimador da seção 9, ele
+vê antes de cadastrar que a estimativa de gasto é **R$ 0,00/mês** para uso típico — a franquia
+gratuita do Google cobre ~10.000 leads mensais. O cartão vira formalidade, não custo.
 
 ### Alternativas avaliadas e descartadas para o v1
 
@@ -294,24 +304,109 @@ chamadas e traz 1 lead novo".
 
 ## 8. Onboarding BYOK
 
-A maior fricção do modelo. Trate como funcionalidade de produto, não como página de ajuda.
+A maior fricção do modelo, e a razão nº 1 pela qual ele pode não converter com público leigo.
+**Trate como funcionalidade de engenharia, não como página de ajuda.** Um passo a passo com
+screenshots pedindo que um vendedor de agência crie projeto no GCP é onboarding de
+desenvolvedor — vai derrubar a conversão.
 
-1. Passo a passo com screenshots: criar projeto no GCP → ativar Places API (New) e Geocoding →
-   gerar chave
-2. **Definir a cota diária junto com o usuário**, dentro do fluxo. Sugira um valor e explique
-   em reais o que ele significa
-3. Restringir a chave às APIs usadas
-4. Validar a chave com uma chamada de teste real antes de aceitar o cadastro
-5. Monitorar: se a chave começar a retornar 403 ou estourar cota, avise o cliente **antes** de
-   ele descobrir com busca quebrada
+### 8.1 Automatize por OAuth
 
-Uma checagem de saúde diária das chaves cadastradas evita a maior parte dos chamados de suporte.
+O cliente clica em **"Conectar com Google"**, autoriza, e o sistema executa:
+
+| Passo | API |
+|---|---|
+| Criar o projeto | Cloud Resource Manager API |
+| Ativar Places API (New) e Geocoding | Service Usage API |
+| Gerar a chave | API Keys API |
+| Restringir a chave às APIs usadas | API Keys API |
+| **Definir a cota diária** | Service Usage API |
+
+De ~15 passos manuais para 2 ou 3 cliques. A cota diária é o ponto mais valioso da automação:
+é a proteção que o cliente não saberia configurar sozinho, e é a única que **trava** gasto.
+
+### 8.2 O que sobra de manual
+
+Criar a conta de faturamento com cartão — o Google exige no console dele. Uma vez, ~3 minutos.
+Apresente **depois** de mostrar a estimativa de custo (seção 9.3), não antes.
+
+### 8.3 Depois do cadastro
+
+- Validar a chave com uma chamada de teste real antes de aceitar
+- Health check diário das chaves cadastradas: se começar a retornar 403 ou estourar cota, avisar
+  o cliente **antes** de ele descobrir com busca quebrada
+
+A checagem diária evita a maior parte dos chamados de suporte.
 
 ---
 
-## 9. Preços
+## 9. Transparência de custo para o cliente
 
-### 9.1 Planos BYOK — modelo recomendado para o v1
+No BYOK o cliente paga o Google diretamente. Ele **precisa** saber quanto vai gastar antes de
+gastar — e essa é a mesma proteção que faltou no incidente que originou este documento.
+
+Tratado como funcionalidade, isso deixa de ser aviso legal e vira argumento de venda.
+
+### 9.1 O argumento que vem de graça
+
+A franquia gratuita do Google é de **1.000 chamadas/mês** por SKU Enterprise. A ~10 chamadas por
+100 leads, isso cobre **cerca de 10.000 leads mensais**. A maioria dos clientes nunca vai pagar
+nada ao Google.
+
+Use isso na copy: em vez de "você precisa cadastrar um cartão", mostre
+**"estimativa para o seu uso: R$ 0,00/mês — você só passa a pagar acima de 10.000 leads"**.
+
+### 9.2 Preços unitários (referência)
+
+| SKU | Por chamada | Grátis/mês |
+|---|---|---|
+| Text Search Enterprise | R$ 0,180 | 1.000 |
+| Place Details Enterprise | R$ 0,103 | 1.000 |
+| Geocoding | R$ 0,026 | 10.000 |
+
+### 9.3 Onde o estimador aparece
+
+**No onboarding, ao definir a cota** — teto e expectativa juntos:
+
+> Cota de 150 chamadas/dia
+> Teto absoluto: R$ 27/dia
+> **Seu uso estimado: R$ 0,00/mês** (dentro da franquia gratuita)
+
+**No formulário, antes de buscar** — faixa, nunca número único, porque o rendimento varia com a
+região:
+
+> 100 leads em Florianópolis / Centro
+> Estimativa: **R$ 0,90 a R$ 2,70** · dentro da sua franquia gratuita
+
+**Depois da busca, o número real** — é o que calibra a confiança:
+
+> 94 leads · 7 chamadas · R$ 1,26 · R$ 0,013 por lead
+
+**No painel, o acumulado do mês**, com a franquia visível:
+
+> Este mês: 640 de 1.000 chamadas gratuitas · **R$ 0,00 gasto**
+
+### 9.4 Como estimar bem
+
+Comece com um padrão de 10 chamadas/100 leads e **aprenda com o histórico do próprio tenant**:
+guarde `api_calls_used / leads_delivered` por job e use média móvel. A estimativa fica específica
+do uso real dele em vez de uma média inventada.
+
+Para região nunca buscada, mostre a faixa genérica com a ressalva.
+
+### 9.5 Avise antes de gastar mal
+
+Use `search_city` / `search_neighborhood` (seção 4) para detectar região saturada:
+
+> ⚠ Você já varreu 80% dessa região. O custo por lead tende a ser 3 a 5× maior aqui.
+> Sugerimos São José ou Palhoça.
+
+É o aviso que teria evitado o incidente original.
+
+---
+
+## 10. Preços
+
+### 10.1 Planos BYOK — modelo recomendado para o v1
 
 O cliente paga o Google. Você vende software, e o preço reflete valor de uso, não custo de dado.
 
@@ -327,7 +422,7 @@ Margem bruta acima de 90% em todos — seu custo é hospedagem e banco.
 funcionando antes de encarar o cadastro no GCP. Essa é a razão de existir do trial: vencer a
 fricção do onboarding.
 
-### 9.2 Planos gerenciados — fase 2, após resolver licenciamento
+### 10.2 Planos gerenciados — fase 2, após resolver licenciamento
 
 Você fornece o dado e cobra por crédito. **1 crédito = 1 lead novo entregue.**
 
@@ -356,7 +451,7 @@ Referência de mercado: Speedio, Cortex e Econodata rodam de R$ 200 a R$ 800/mê
 
 ---
 
-## 10. Contabilização de créditos
+## 11. Contabilização de créditos
 
 Seis regras. São elas que decidem se o sistema de créditos funciona ou vira fila de suporte.
 
@@ -375,7 +470,7 @@ Saldo é sempre `SELECT SUM(amount) FROM credit_ledger WHERE tenant_id = ? AND (
 
 ---
 
-## 11. Medição obrigatória
+## 12. Medição obrigatória
 
 Antes de fechar qualquer preço do modelo gerenciado, ou de afrouxar qualquer cota:
 
@@ -398,23 +493,38 @@ O intervalo entre 5 e 345 é largo demais para precificar por estimativa. **Meç
 
 ---
 
-## 12. Roadmap
+## 13. Roadmap
 
 **Fase 1 — Fundação (BYOK)**
 Multi-tenancy, chave por cliente com criptografia, busca assíncrona em fila, deduplicação por
 tenant, guardrails da seção 6, telemetria de custo da seção 7.
 
-**Fase 2 — Comercial**
-Planos e cobrança (Stripe ou Asaas com Pix), onboarding guiado de BYOK, trial com chave
-própria, extrato de uso.
+**Fase 2 — Conversão**
+É aqui que o BYOK vive ou morre, e o trabalho é de engenharia, não de copy:
+onboarding automatizado por OAuth (seção 8.1), estimador de custo nos quatro pontos da
+seção 9.3, aviso de região saturada (9.5), trial com chave própria. Junto: planos e cobrança
+(Stripe, ou Asaas com Pix) e extrato de uso.
+
+Sem a automação e o estimador, os planos da seção 10.1 não convertem com público leigo — o
+cliente trava no cadastro do GCP.
+
+**Fase 2b — Em paralelo, não bloqueante**
+Conversar com o comercial do Google Maps Platform sobre licenciamento para SaaS. Custa um
+e-mail, e a resposta destrava (ou descarta) a fase 4. Faça enquanto é pequeno, não com 200
+clientes na base.
 
 **Fase 3 — Otimização**
 Medição por termo do catálogo, poda dos termos redundantes (seção 5.5), mapa de regiões
 esgotadas por tenant, sugestão de próxima região a varrer.
 
 **Fase 4 — Modelo gerenciado**
-Só depois de receita recorrente: negociar licenciamento com o Google ou avaliar fornecedor
-licenciado, e então habilitar os planos por crédito da seção 9.2.
+Só com o licenciamento resolvido (2b) e receita recorrente que banque um contrato. Então
+habilitar os planos por crédito da seção 10.2, oferecidos ao lado do BYOK: gerenciado como
+padrão para o cliente leigo, BYOK mais barato para quem quer volume e controle.
+
+Note que escolher o gerenciado **sem** licenciamento não é decisão de margem, é de risco
+existencial: margem menor se recupera com preço e escala; acesso revogado pelo Google encerra
+o produto de um dia para o outro.
 
 **Fase 5 — Enriquecimento**
 Analisar o site do lead que *tem* site (tecnologia, se é responsivo, idade do layout) para
@@ -423,13 +533,14 @@ valor é alto e não há problema de termos de uso.
 
 ---
 
-## 13. Riscos conhecidos
+## 14. Riscos conhecidos
 
 | Risco | Mitigação |
 |---|---|
 | Termos do Google sobre redistribuição | BYOK no v1; licenciar antes da fase 4 |
 | Custo por lead ainda não medido | Seção 11, antes de precificar o gerenciado |
-| Fricção do onboarding BYOK derruba conversão | Trial com chave própria + onboarding guiado |
+| Fricção do onboarding BYOK derruba conversão | Automação por OAuth (8.1) + estimador mostrando R$ 0,00 (9.1) + trial com chave própria |
+| Google revogar acesso no modelo gerenciado | Risco existencial, não de margem. Conversar com o comercial do Google antes da fase 4 |
 | Cliente rebusca região esgotada | Teto por job + mapa de regiões varridas |
 | Completude de `websiteUri` na busca | Validar com script antes de eliminar o Place Details |
 | Chave do cliente expira ou estoura cota | Health check diário + aviso proativo |
