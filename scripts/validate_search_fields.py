@@ -8,16 +8,19 @@ Text Search — no mesmo SKU Enterprise que a busca já paga por causa de `ratin
 Este script mede isso com dados reais antes de a gente confiar na troca.
 
 Uso:
-    GOOGLE_MAPS_API_KEY=... python scripts/validate_search_fields.py "Florianópolis" "Centro" "Marceneiro" [n_details]
+    GOOGLE_MAPS_API_KEY=... python scripts/validate_search_fields.py "Florianópolis" "Centro" "Marceneiro" [--details N]
 
-`n_details` controla quantos Place Details são comparados (padrão 5, use 0 para nenhum).
-O número de chamadas é fixo: 1 Geocoding + 1 Text Search + n_details. Não há laço nem
-paginação, então não existe cenário de consumo descontrolado.
+A busca é sempre uma só, devolvendo até 20 negócios. `--details N` diz quantos DESSES
+negócios recebem uma segunda chamada (Place Details) para conferir campo a campo — não
+altera quantos negócios são buscados. Padrão 5; use 0 para pular a conferência.
+
+O número de chamadas é fixo: 1 Geocoding + 1 Text Search + N Place Details. Não há laço
+nem paginação, então não existe cenário de consumo descontrolado.
 
 Custo por execução, a R$ 0,18 por busca e R$ 0,103 por Details:
-    n_details=0  ->  ~R$ 0,21   confirma que o field mask é aceito e que os campos vêm
-    n_details=5  ->  ~R$ 0,72   amostra para detectar divergência sistemática (padrão)
-    n_details=20 ->  ~R$ 2,27   comparação completa
+    --details 0   ->  ~R$ 0,21   confirma que o field mask é aceito e que os campos vêm
+    --details 5   ->  ~R$ 0,72   amostra para detectar divergência sistemática (padrão)
+    --details 20  ->  ~R$ 2,27   confere todos os 20 negócios da busca
 """
 
 import asyncio
@@ -44,7 +47,8 @@ async def main(city: str, neighborhood: str, term: str, n_details: int) -> int:
         return 1
 
     estimate = 0.026 + 0.18 + n_details * 0.103
-    print(f"Chamadas: 1 Geocoding + 1 Text Search + {n_details} Place Details")
+    print(f"Busca: 1 chamada, até 20 negócios.")
+    print(f"Conferência: {n_details} Place Details.")
     print(f"Custo estimado: R$ {estimate:.2f}\n")
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -147,10 +151,30 @@ async def main(city: str, neighborhood: str, term: str, n_details: int) -> int:
     return 0
 
 
+def parse_args(argv: list[str]) -> tuple[str, str, str, int]:
+    """Cidade, bairro, termo e quantos Place Details conferir.
+
+    `--details` é flag nomeada de propósito: um número solto no fim da linha se confunde
+    com "quantos negócios buscar", que não é o que ele controla.
+    """
+    n_details = 5
+    positional: list[str] = []
+    index = 0
+    while index < len(argv):
+        if argv[index] == "--details":
+            n_details = int(argv[index + 1])
+            index += 2
+            continue
+        positional.append(argv[index])
+        index += 1
+
+    return (
+        positional[0] if positional else "Florianópolis",
+        positional[1] if len(positional) > 1 else "Centro",
+        positional[2] if len(positional) > 2 else "Marceneiro",
+        n_details,
+    )
+
+
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    city = args[0] if args else "Florianópolis"
-    neighborhood = args[1] if len(args) > 1 else "Centro"
-    term = args[2] if len(args) > 2 else "Marceneiro"
-    n_details = int(args[3]) if len(args) > 3 else 5
-    raise SystemExit(asyncio.run(main(city, neighborhood, term, n_details)))
+    raise SystemExit(asyncio.run(main(*parse_args(sys.argv[1:]))))
