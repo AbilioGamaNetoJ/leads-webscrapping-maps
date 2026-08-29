@@ -174,6 +174,17 @@ CREATE TABLE credit_ledger (
   created_at   timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX ON credit_ledger (tenant_id, created_at DESC);
+
+-- Cache da amostra pública (seção 10.2). Sem tenant: é a mesma resposta para todo mundo,
+-- e é isso que faz a demo custar ~R$ 0,18 por combinação em vez de por visitante.
+CREATE TABLE demo_cache (
+  id           bigserial PRIMARY KEY,
+  city         text NOT NULL,
+  category     text NOT NULL,
+  payload      jsonb NOT NULL,   -- já mascarado; nunca guarde o telefone completo aqui
+  fetched_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (city, category)
+);
 ```
 
 **Três decisões embutidas aí:**
@@ -184,7 +195,11 @@ CREATE INDEX ON credit_ledger (tenant_id, created_at DESC);
 2. `credit_ledger` append-only — saldo é `SUM(amount)`. Nunca faça `UPDATE saldo`. Auditoria,
    estorno e extrato saem de graça.
 3. `search_city` / `search_neighborhood` — sem isso é impossível responder "quais regiões já
-   varri?", que é a informação que evita rebusca (a operação mais cara que existe, ver seção 6).
+   varri?", que é a informação que evita rebusca (a operação mais cara que existe, ver seção 6)
+   e alimenta o aviso de região saturada da seção 9.5.
+4. `demo_cache` sem `tenant_id` — a amostra pública é idêntica para todos, então uma linha por
+   combinação serve milhares de visitantes. Guarde já mascarado: se o telefone completo não
+   está lá, ele não vaza.
 
 ---
 
@@ -404,25 +419,67 @@ Use `search_city` / `search_neighborhood` (seção 4) para detectar região satu
 
 ---
 
-## 10. Preços
+## 10. Aquisição e preços
 
-### 10.1 Planos BYOK — modelo recomendado para o v1
+### 10.1 O ovo e a galinha do BYOK
 
-O cliente paga o Google. Você vende software, e o preço reflete valor de uso, não custo de dado.
+O cliente não configura o Google antes de ver valor, e não vê valor antes de configurar o
+Google. Resolver isso é o problema central da aquisição neste modelo.
 
-| Plano | Buscas/mês | Usuários | Preço |
-|---|---|---|---|
-| **Starter** | 20 | 1 | R$ 97 |
-| **Pro** | 100 | 3 | R$ 197 |
-| **Business** | Ilimitado | 10 | R$ 397 |
+A vantagem que torna a solução possível: **no BYOK seu custo marginal por cliente é
+hospedagem.** Isso permite um plano gratuito permanente — não um trial de 14 dias, um free
+de verdade. Praticamente nenhum concorrente de dados consegue oferecer isso, porque para eles
+cada lead custa dinheiro.
 
-Margem bruta acima de 90% em todos — seu custo é hospedagem e banco.
+Funil em três estágios.
 
-**Trial:** 5 buscas com a sua chave (custo estimado abaixo de R$ 5) para o cliente ver o produto
-funcionando antes de encarar o cadastro no GCP. Essa é a razão de existir do trial: vencer a
-fricção do onboarding.
+### 10.2 Estágio 1 — Amostra sem cadastro
 
-### 10.2 Planos gerenciados — fase 2, após resolver licenciamento
+Na landing: *"Veja 10 negócios sem site em [sua cidade] agora"*. Campo de cidade, botão,
+resultado na tela. Sem e-mail, sem senha, sem Google.
+
+Roda na **sua** chave, e o truque de custo é **cachear por (cidade, categoria)**. O primeiro
+visitante que pedir "Florianópolis / Marceneiro" custa R$ 0,18; os próximos 500 custam zero.
+Algumas centenas de combinações populares e a exposição total fica na casa de R$ 50, uma vez.
+
+Mostre **dados parciais**: nome e bairro completos, telefone mascarado (`(48) 9****-**40`).
+Prova que o dado é real e específico da região dele, sem entregar o produto.
+
+Controle de abuso: rate limit por IP e a **cota diária da chave de demo** como teto absoluto.
+
+> **Ressalva de termos:** na demo você serve dado do Google a terceiros. Em volume pequeno e
+> cacheado a exposição é menor, mas é a mesma questão da seção 2. Mencione quando conversar com
+> o comercial do Google (fase 2b).
+
+### 10.3 Estágio 2 — Conta gratuita com BYOK
+
+Para ver o telefone completo e buscar o que quiser, conectar o Google — o fluxo OAuth de dois
+cliques da seção 8.1.
+
+O argumento fica muito mais fácil neste ponto, porque o cliente **já viu leads reais da cidade
+dele**. Você não pede esforço em troca de promessa, pede em troca de algo que ele já provou.
+
+### 10.4 Estágio 3 — Planos BYOK
+
+| | **Free** | **Starter** | **Pro** | **Business** |
+|---|---|---|---|---|
+| Preço | **R$ 0** | R$ 97 | R$ 197 | R$ 397 |
+| Buscas/mês | 10 | 50 | 200 | Ilimitado |
+| **Exportar planilha** | **Não** | Sim | Sim | Sim |
+| Histórico | 30 dias | Ilimitado | Ilimitado | Ilimitado |
+| Usuários | 1 | 1 | 3 | 10 |
+| Enriquecimento | — | — | Sim | Sim |
+
+Margem bruta acima de 90% em todos os pagos — seu custo é hospedagem e banco.
+
+**O paywall é a exportação.** É o momento natural: o cliente busca, vê 80 leads sem site na
+tela, quer mandar para o time comercial — e a planilha é paga. Ele recebeu o valor inteiro
+antes de pagar, e o que compra é a operação, não o dado.
+
+Isso funciona melhor que limitar volume, porque volume não te custa nada e o cliente sente
+quando um limite é arbitrário.
+
+### 10.5 Planos gerenciados — fase 4, após resolver licenciamento
 
 Você fornece o dado e cobra por crédito. **1 crédito = 1 lead novo entregue.**
 
@@ -502,7 +559,8 @@ tenant, guardrails da seção 6, telemetria de custo da seção 7.
 **Fase 2 — Conversão**
 É aqui que o BYOK vive ou morre, e o trabalho é de engenharia, não de copy:
 onboarding automatizado por OAuth (seção 8.1), estimador de custo nos quatro pontos da
-seção 9.3, aviso de região saturada (9.5), trial com chave própria. Junto: planos e cobrança
+seção 9.3, aviso de região saturada (9.5), e o funil de três estágios da seção 10 — amostra
+pública cacheada, conta gratuita com BYOK, paywall na exportação. Junto: planos e cobrança
 (Stripe, ou Asaas com Pix) e extrato de uso.
 
 Sem a automação e o estimador, os planos da seção 10.1 não convertem com público leigo — o
@@ -519,7 +577,7 @@ esgotadas por tenant, sugestão de próxima região a varrer.
 
 **Fase 4 — Modelo gerenciado**
 Só com o licenciamento resolvido (2b) e receita recorrente que banque um contrato. Então
-habilitar os planos por crédito da seção 10.2, oferecidos ao lado do BYOK: gerenciado como
+habilitar os planos por crédito da seção 10.5, oferecidos ao lado do BYOK: gerenciado como
 padrão para o cliente leigo, BYOK mais barato para quem quer volume e controle.
 
 Note que escolher o gerenciado **sem** licenciamento não é decisão de margem, é de risco
