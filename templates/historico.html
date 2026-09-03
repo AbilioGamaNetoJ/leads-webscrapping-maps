@@ -11,7 +11,7 @@
       <p class="text-sm text-gray-500 dark:text-[#a09fc0] mt-0.5">{{ total }} negócio{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="/export"
+      <a href="/export?name={{ name|urlencode }}&amp;has_website={{ has_website|urlencode }}&amp;business_type={{ business_type|urlencode }}"
         class="flex-1 min-w-[150px] sm:flex-none flex items-center justify-center gap-2 min-h-[44px] border border-gray-300 dark:border-[#252340] text-gray-700 dark:text-[#9897b3] hover:bg-gray-50 dark:hover:bg-[#1d1c2e]
                 font-medium py-2 px-4 rounded-lg transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,7 +20,7 @@
         </svg>
         Exportar XLSX
       </a>
-      <a href="/export?only_without_website=true"
+      <a href="/export?name={{ name|urlencode }}&amp;has_website=false&amp;business_type={{ business_type|urlencode }}"
         class="flex-1 min-w-[150px] sm:flex-none flex items-center justify-center gap-2 min-h-[44px] bg-green-600 hover:bg-green-700 text-white
                font-medium py-2 px-4 rounded-lg transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -15,6 +15,7 @@ def test_search_saves_new_lead(client, db_session, mock_google):
     body = response.json()
     assert body["summary"]["new_saved"] == 1
     assert body["summary"]["skipped_duplicates"] == 0
+    assert isinstance(body["results"][0]["id"], int)
     assert body["results"][0]["name"] == "Padaria Teste"
     assert body["results"][0]["phone"] == "+55 48 3025-6255"
 

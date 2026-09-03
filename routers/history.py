@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import AppUser, Business
 from services.auth import get_current_user, require_admin, require_same_origin
+from services.business_filters import apply_business_filters
 from services.business_types import as_dicts, type_labels
 from services.whatsapp import to_whatsapp_url
 
@@ -52,22 +53,16 @@ def history(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    query = db.query(Business)
-
-    if name:
-        query = query.filter(Business.name.ilike(f"%{name}%"))
-
-    if has_website == "true":
-        query = query.filter(Business.has_website == True)
-    elif has_website == "false":
-        query = query.filter(Business.has_website == False)
-
-    if business_type:
-        query = query.filter(Business.business_type == business_type)
+    query = apply_business_filters(
+        db.query(Business),
+        name=name,
+        has_website=has_website,
+        business_type=business_type,
+    )
 
     total = query.count()
     businesses = (
-        query.order_by(Business.created_at.desc())
+        query.order_by(Business.created_at.desc(), Business.id.desc())
         .offset((page - 1) * PER_PAGE)
         .limit(PER_PAGE)
         .all()

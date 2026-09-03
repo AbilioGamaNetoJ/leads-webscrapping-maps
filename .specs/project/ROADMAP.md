@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| **Last updated** | 2026-08-24 |
+| **Last updated** | 2026-09-03 |
 
 ## Current Version: Internal access control
 
@@ -28,6 +28,7 @@
 | 2026-08-21 | Migrações legadas compatíveis com Neon vazio ou já inicializado | Done |
 | 2026-08-21 | Normalização da resposta de convites do Clerk | Done |
 | 2026-08-21 | Sincronização do nome e e-mail do Clerk no primeiro login | Done |
+| 2026-09-03 | Exportação XLSX respeita resultados da busca e filtros do histórico | Done |
 
 ## Upcoming Versions
 

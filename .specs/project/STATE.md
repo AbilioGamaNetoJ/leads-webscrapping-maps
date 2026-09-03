@@ -11,8 +11,8 @@
 
 | Field | Value |
 |---|---|
-| **Last session** | 2026-08-24 |
-| **Last agent** | Claude Code |
+| **Last session** | 2026-09-03 |
+| **Last agent** | Codex |
 | **Current branch** | main |
 
 ---
@@ -46,6 +46,7 @@
 | 2026-08-24 | Ícone do PWA é só o símbolo (chevron), sem o "C" interligado nem o wordmark | O logo fonte (`logotipo-fundo-dark.png`) é um lockup 4000×4000 com muito espaço vazio; testado no ícone de 48–192px, chevron sozinho é o que continua legível | Gerado via `sharp`: recorte da região do símbolo, máscara por cor (mantém só os tons de roxo, remove pixels brancos do "C"/texto), `trim`, padding quadrado e composição sobre fundo `#1E0E3A` |
 | 2026-08-24 | Links de Maps/WhatsApp/Exportar deixaram de usar `target="_blank"` | Usuário reportou ficar "preso" fora do PWA instalado depois de abrir Maps/WhatsApp, precisando fechar e reabrir o app. Com o app em `display: standalone`, uma nova aba/janela sai do contexto do PWA sem affordance de volta; navegação na mesma janela deixa o Android mostrar a barra de retorno ao app | `static/app.js` (`buildMapsLink`/`buildWhatsAppButton`) e `templates/historico.html`/`_bottom_nav.html`/`index.html` tiveram o `target="_blank"` removido; `rel="noopener noreferrer"` virou só `rel="noreferrer"` (sem `target`, `noopener` não se aplica) |
 | 2026-08-24 | Investigado (sem bug reproduzido) relato de XLSX exportado "só com números" | Gerei um arquivo real com `generate_xlsx` e inspecionei célula a célula: todas as 8 colunas vêm corretas: nome/endereço/telefone sempre têm fallback "Não informado", nunca ficam vazios | Trocado `StreamingResponse(BytesIO)` por `Response(content=xlsx.getvalue())` em `routers/export.py` (elimina a iteração implícita por linha do `BytesIO`); testes de `xlsx_generator` e `GET /export` passaram a checar todas as colunas linha a linha, não só cabeçalho/nome |
+| 2026-09-03 | Exportação recebe filtros e IDs explícitos | Cada botão deve exportar exatamente o conjunto que representa, sem depender do estado completo do banco | Busca envia IDs retornados; histórico propaga nome, site e tipo; ausência de filtros continua exportando todos os leads |
 
 ---
 
@@ -89,6 +90,7 @@
 |---|---|---|---|
 | 1 | Autenticação Clerk e gestão de usuários | Concluída | 2026-08-21 |
 | 2 | Expansão do catálogo de tipos de negócio | Concluída | 2026-08-20 |
+| 3 | Correção dos escopos de exportação XLSX | Concluída | 2026-09-03 |
 
 ---
 

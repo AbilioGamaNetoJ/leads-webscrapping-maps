@@ -21,9 +21,26 @@ def test_xlsx_headers_and_business_type_label():
         ]
     )
     worksheet = load_workbook(workbook).active
-    assert worksheet["A1"].value == "Nome do Negócio"
-    assert worksheet["B1"].value == "Tipo de Negócio"
-    assert worksheet["B2"].value == category.label
+    assert [cell.value for cell in worksheet[1]] == [
+        "Nome do Negócio",
+        "Tipo de Negócio",
+        "Endereço",
+        "Telefone",
+        "Avaliação",
+        "Nº de Avaliações",
+        "Possui Site?",
+        "Link do Maps",
+    ]
+    assert [cell.value for cell in worksheet[2]] == [
+        "Exemplo",
+        category.label,
+        "Rua A",
+        "123",
+        None,
+        None,
+        "Não",
+        None,
+    ]
 
 
 def test_xlsx_writes_every_column_for_each_row_without_shifting():

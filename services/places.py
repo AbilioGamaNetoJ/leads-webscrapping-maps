@@ -320,7 +320,6 @@ async def search_businesses(
 
         await _fill_missing_phones(client, collected)
 
-    results = []
     businesses = []
     with_website = len(rejected)
     without_website = 0
@@ -333,17 +332,6 @@ async def search_businesses(
             without_website += 1
 
         businesses.append(_to_business(place, query, has_website))
-        results.append(
-            {
-                "name": businesses[-1].name,
-                "address": businesses[-1].address,
-                "phone": businesses[-1].phone,
-                "maps_url": businesses[-1].maps_url,
-                "has_website": has_website,
-                "rating": place.get("rating"),
-                "user_ratings_total": place.get("userRatingCount"),
-            }
-        )
 
     # Os recusados pelo filtro de site também vão para o banco. Sem isso a deduplicação
     # não os conhece e toda busca futura na mesma região volta a pagar por eles.
@@ -354,6 +342,20 @@ async def search_businesses(
     if persisted:
         db.add_all(persisted)
         db.commit()
+
+    results = [
+        {
+            "id": business.id,
+            "name": business.name,
+            "address": business.address,
+            "phone": business.phone,
+            "maps_url": business.maps_url,
+            "has_website": business.has_website,
+            "rating": business.rating,
+            "user_ratings_total": business.user_ratings_total,
+        }
+        for business in businesses
+    ]
 
     return {
         "results": results,

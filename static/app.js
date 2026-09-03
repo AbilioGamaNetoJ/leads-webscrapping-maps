@@ -315,6 +315,30 @@
   const resultsCardsList = document.getElementById('resultsCardsList');
   const resultsCount = document.getElementById('resultsCount');
   const exportBtn = document.getElementById('exportBtn');
+  const exportBtnText = document.getElementById('exportBtnText');
+  const exportBtnHint = document.getElementById('exportBtnHint');
+
+  function setSearchExport(ids) {
+    const hasResults = ids.length > 0;
+
+    exportBtn.setAttribute('aria-disabled', String(!hasResults));
+    exportBtn.classList.toggle('pointer-events-none', !hasResults);
+    exportBtn.classList.toggle('opacity-50', !hasResults);
+
+    if (!hasResults) {
+      exportBtn.removeAttribute('href');
+      exportBtnText.textContent = 'Exportar XLSX';
+      exportBtnHint.textContent = 'Não há leads nesta busca para exportar';
+      return;
+    }
+
+    const params = new URLSearchParams();
+    ids.forEach((id) => params.append('ids', id));
+    exportBtn.href = `/export?${params}`;
+    exportBtnText.textContent = 'Exportar resultados XLSX';
+    exportBtnHint.textContent = 'Exporta somente os leads da busca atual';
+  }
+
   const cancelSearchBtn = document.getElementById('cancelSearchBtn');
   const progressText = document.getElementById('progressText');
 
@@ -549,6 +573,8 @@
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!businessTypeField.ensureSelected()) return;
+    exportBtn.setAttribute('aria-disabled', 'true');
+    exportBtn.classList.add('pointer-events-none', 'opacity-50');
 
     const target = parseInt(document.getElementById('quantity').value, 10);
     const basePayload = {
@@ -572,6 +598,7 @@
     const totals = { new_saved: 0, with_website: 0, without_website: 0, skipped_duplicates: 0 };
     let cursor = 0;
     let collected = 0;
+    const exportIds = [];
     let failed = false;
     // Numa cidade já varrida todo lote volta vazio; sem esta trava o laço percorreria o
     // plano inteiro (centenas de consultas pagas) para não mostrar nada.
@@ -609,6 +636,7 @@
         emptyBatches = data.results.length ? 0 : emptyBatches + 1;
 
         appendResults(data.results);
+        exportIds.push(...data.results.map((business) => business.id));
         collected += data.results.length;
         totals.new_saved += data.summary.new_saved;
         totals.with_website += data.summary.with_website;
@@ -634,8 +662,6 @@
     setProgress(collected, target, true);
     if (collected === 0 && !failed) showNoResults();
 
-    // Update export button to reflect current filter
-    const onlyWithout = document.getElementById('only_without_website').checked;
-    exportBtn.href = onlyWithout ? '/export?only_without_website=true' : '/export';
+    setSearchExport(exportIds);
   });
 })();
